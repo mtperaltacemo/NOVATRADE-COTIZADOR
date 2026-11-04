@@ -1,6 +1,6 @@
 /* Service worker del Cotizador Novatrade: permite abrir la app sin internet.
    Cuando publique una versión nueva, cambie el número de VERSION. */
-const VERSION = 'v1';
+const VERSION='v2';
 const CACHE = 'nt-cotizador-' + VERSION;
 const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'jspdf.umd.min.js', 'jspdf.plugin.autotable.min.js',
   'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
