@@ -183,6 +183,17 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
 .pc .pi small{display:block;color:var(--muted);font-size:12px;margin-top:2px;line-height:1.3}
 .pimg{width:100%;max-height:230px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:12px}
 .selbar{display:flex;gap:8px;align-items:center}
+
+/* seguimiento */
+.grp{margin:8px 0 0;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.st-enviada{color:var(--muted)}.st-confirmada,.st-pedido,.st-transito,.st-aduana{color:var(--accent)}.st-entregada{color:var(--good)}.st-cancelada{color:var(--bad)}
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.cost{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.9fr);gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.cost.head{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.cost input{min-width:0;padding:8px 6px;font-size:13px;text-align:right}
+.cost .n{text-align:right;font-variant-numeric:tabular-nums}
+.aw{color:var(--warn);font-weight:700;font-size:13px}.ab{color:var(--bad);font-weight:700;font-size:13px}
+.hist{font-size:13px;padding:6px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
 </style>
 </head>
 <body>
@@ -214,6 +225,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
         <button class="tile" data-go="saved" type="button"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><b>Cotizaciones</b><small><span class="count" id="tSaved">0</span> guardadas</small></button>
         <button class="tile" data-go="clients" type="button"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><path d="M16 5.2a3 3 0 010 5.6M18.5 15.3c1.6.7 2.6 2.1 2.9 4.7"/></svg><b>Clientes</b><small><span class="count" id="tClients">0</span> en el CRM</small></button>
         <button class="tile" data-go="catalog" type="button"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><b>Catálogo</b><small><span class="count" id="tCat">0</span> productos para enviar por WhatsApp</small></button>
+        <button class="tile" data-go="track" type="button"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><b>Seguimiento</b><small><span class="count" id="tTrk">0</span> activas · <span class="count" id="tTrkAl">0</span> alertas</small></button>
       </div>
       <div class="card" id="homeFollowCard" hidden><h2>Seguimientos para hoy</h2><div id="homeFollow" style="display:flex;flex-direction:column;gap:8px"></div></div>
       <div class="card"><details class="acc"><summary>Copia de seguridad e instalación</summary><div>
@@ -327,6 +339,41 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
         </div></div>
       <div class="card"><h2>Cotizaciones de este cliente</h2><div id="cQuotes"></div></div>
       <div class="sticky"><div class="row"><button class="btn pri" id="btnSaveC" data-go="saveClient" type="button" style="flex:1">Guardar cliente</button><span id="delClientRow"></span></div></div>
+    </section>
+
+
+    <!-- SEGUIMIENTO (tablero) -->
+    <section id="view-track" hidden style="flex-direction:column;gap:14px">
+      <div class="card" id="trkAlerts" hidden><h2>Alertas</h2><div id="trkAlertList" style="display:flex;flex-direction:column;gap:8px"></div></div>
+      <div class="chips" id="trkChips"></div>
+      <div id="trkList" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div class="sticky"><button class="btn" data-go="saved" type="button" style="width:100%">+ Nueva operación desde una cotización</button></div>
+    </section>
+
+    <!-- OPERACIÓN -->
+    <section id="view-op" hidden style="flex-direction:column;gap:14px">
+      <div class="card"><h2 id="opHead">Operación</h2><p class="hint" id="opSub" style="margin:0 0 10px"></p>
+        <div class="chips" id="opStages"></div>
+        <div class="row" style="margin-top:12px"><button class="btn pri sm" data-go="nextEtapa" id="btnNextE" type="button">Avanzar</button><span id="opCancelRow"></span></div>
+        <div id="opAlertsBox" style="margin-top:10px;display:flex;flex-direction:column;gap:4px"></div></div>
+      <div class="card"><h2>Pedido y embarque</h2><div class="grid">
+        <label class="f full"><span>Proveedor</span><input class="plain" data-of="proveedor" autocomplete="off"></label>
+        <label class="f"><span>N.º de pedido</span><input class="plain" data-of="pedidoNum" autocomplete="off"></label>
+        <label class="f"><span>Naviera</span><input class="plain" data-of="naviera" list="dlNav" autocomplete="off"><datalist id="dlNav"><option value="MSC"><option value="Maersk"><option value="CMA CGM"><option value="Hapag-Lloyd"><option value="COSCO"><option value="ONE"><option value="Evergreen"></datalist></label>
+        <label class="f"><span>Contenedor</span><input class="plain" data-of="contenedor" autocomplete="off"></label>
+        <label class="f"><span>BL (conocimiento de embarque)</span><input class="plain" data-of="bl" autocomplete="off"></label>
+        <label class="f full"><span>Fecha estimada de llegada (ETA)</span><input class="plain" type="date" data-of="eta"></label></div><div class="row" style="margin-top:12px"><button class="btn sm" data-go="opTrack" type="button">Rastrear contenedor en la naviera</button></div><p class="hint" id="trackHint" style="margin-top:8px">Copia el N.º de contenedor y abre la página de la naviera. Luego anote aquí la etapa y la ETA.</p></div>
+      <div class="card"><h2>Pagos al proveedor (USD)</h2>
+        <label class="f full"><span>Monto total del pedido (USD)</span><input class="plain" inputmode="decimal" data-of="pedidoUSD" autocomplete="off"></label>
+        <div id="opPagos"></div>
+        <div class="row" style="margin-top:10px"><button class="btn sm" data-go="addPay" type="button">+ Agregar pago</button></div>
+        <p class="hint" id="payTot" style="margin-top:10px"></p></div>
+      <div class="card"><h2>Costos: cotizado vs. real (Bs)</h2>
+        <div class="cost head"><span>Concepto</span><span class="n">Cotizado</span><span class="n">Real</span><span class="n">Dif.</span></div>
+        <div id="opCostos"></div><p class="hint" id="costTot" style="margin-top:10px"></p></div>
+      <div class="card"><h2>Notas</h2><textarea class="ta" data-of="notas" placeholder="Acuerdos, incidencias, documentos…"></textarea></div>
+      <div class="card"><h2>Historial</h2><div id="opHist"></div></div>
+      <div class="sticky"><div class="row"><button class="btn pri" data-go="opWa" type="button" style="flex:1">Avisar al cliente</button><button class="btn sm" data-go="opQuote" id="btnOpQuote" type="button">Ver cotización</button><span id="opDelRow"></span></div></div>
     </section>
 
     <!-- CATÁLOGO -->
@@ -660,7 +707,7 @@ function renderList(){
   const el=$('#qList'),f=nz(qQuery.trim());
   const l=qCache.filter(q=>!f||nz((q.numero||'')+' '+(q.cliente||'')+' '+((q.meta&&q.meta.clienteCodigo)||'')).includes(f));
   el.innerHTML=l.length?l.map(q=>`<div class="q"><div><b>${esc(q.numero)}</b><br><small>${esc(((q.meta&&q.meta.clienteCodigo)?q.meta.clienteCodigo+' · ':'')+(q.cliente||'Sin cliente'))} · ${new Date(q.ts).toLocaleDateString('es-BO')}</small></div><div class="amt">${bs(q.total)}</div>
-   <div class="acts"><button class="btn sm pri" data-act="abrir" data-id="${q.id}" type="button">Abrir</button><button class="btn sm" data-act="dupQ" data-id="${q.id}" type="button">Duplicar</button>${
+   <div class="acts"><button class="btn sm pri" data-act="abrir" data-id="${q.id}" type="button">Abrir</button><button class="btn sm" data-act="dupQ" data-id="${q.id}" type="button">Duplicar</button><button class="btn sm" data-act="trk" data-id="${q.id}" type="button">${opByQuote(q.id)?'Ver seguimiento':'Seguimiento'}</button>${
    confirmDel===q.id?`<button class="btn sm danger" data-act="delQ" data-id="${q.id}" type="button">Sí, eliminar</button><button class="btn sm ghost" data-act="noDel" type="button">Cancelar</button>`:`<button class="btn sm danger ghost" data-act="askDel" data-id="${q.id}" type="button">Eliminar</button>`}</div></div>`).join('')
    :`<p class="hint">${qCache.length?'Ninguna cotización coincide con la búsqueda.':'Aún no hay cotizaciones guardadas. Use «Guardar» dentro de una cotización.'}</p>`;
 }
@@ -687,7 +734,7 @@ function exportExcel(){
   const {res,det,cli}=exportData(qs,cl);
   const wb=XLSX.utils.book_new();
   const add=(rows,name,hdr)=>{const ws=XLSX.utils.json_to_sheet(rows.length?rows:[Object.fromEntries(hdr.map(h=>[h,'']))]);ws['!cols']=Object.keys(rows[0]||Object.fromEntries(hdr.map(h=>[h,'']))).map(k=>({wch:Math.max(12,Math.min(38,k.length+4))}));XLSX.utils.book_append_sheet(wb,ws,name)};
-  add(res,'Resumen',['N.º cotización']);add(det,'Detalle',['N.º cotización']);add(cli,'Clientes',['Código']);
+  add(res,'Resumen',['N.º cotización']);add(det,'Detalle',['N.º cotización']);add(cli,'Clientes',['Código']);add(exportOps(),'Seguimiento',['N.º cotización']);
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
   saveBlob(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'cotizaciones-novatrade-'+today()+'.xlsx');toast('Excel generado')
 }
@@ -729,7 +776,7 @@ document.addEventListener('change',e=>{
 });
 window.addEventListener('online',()=>{if(lsGet('nt_syncdirty',0))syncNow(false)});
 function exportBackup(){
-  const data={app:'cotizador-novatrade',version:2,fecha:new Date().toISOString(),counter:lsGet('nt_counter',0),ccounter:lsGet('nt_ccounter',0),cfg,quotes:lsGet('nt_quotes',[]),clients:lsGet('nt_clients',[]),catalog:lsGet('nt_catalog',null)};
+  const data={app:'cotizador-novatrade',version:2,fecha:new Date().toISOString(),counter:lsGet('nt_counter',0),ccounter:lsGet('nt_ccounter',0),cfg,quotes:lsGet('nt_quotes',[]),clients:lsGet('nt_clients',[]),catalog:lsGet('nt_catalog',null),ops:lsGet('nt_ops',[])};
   saveBlob(new Blob([JSON.stringify(data)],{type:'application/json'}),'copia-cotizador-novatrade-'+today()+'.json');toast('Copia exportada')
 }
 async function importBackup(file){
@@ -738,6 +785,7 @@ async function importBackup(file){
     lsSet('nt_quotes',cur.concat(add).sort((a,b)=>b.ts-a.ts));
     const cc=lsGet('nt_clients',[]),cids=new Set(cc.map(x=>x.id)),addC=(d.clients||[]).filter(x=>x&&x.id&&!cids.has(x.id));
     lsSet('nt_clients',cc.concat(addC));
+    if(Array.isArray(d.ops)){const oc=lsGet('nt_ops',[]),oi=new Set(oc.map(x=>x.id));lsSet('nt_ops',oc.concat(d.ops.filter(x=>x&&x.id&&!oi.has(x.id))));ops=lsGet('nt_ops',[])}
     if(Array.isArray(d.catalog)){const cur=lsGet('nt_catalog',null)||[],pids=new Set(cur.map(x=>x.id));lsSet('nt_catalog',cur.concat(d.catalog.filter(x=>x&&x.id&&!pids.has(x.id))));loadCatalog()}
     lsSet('nt_counter',Math.max(lsGet('nt_counter',0)||0,d.counter||0));lsSet('nt_ccounter',Math.max(lsGet('nt_ccounter',0)||0,d.ccounter||0));
     if(d.cfg){cfg={...cfg,...d.cfg};lsSet('nt_cfg',cfg);syncMeta()}
@@ -783,6 +831,7 @@ document.addEventListener('click',async e=>{
   if(a==='addProd'){if(S.prods.length<30){S.prods.push(blankProd());openProd=S.prods.length-1;renderProds();update();const el=$(`[data-i="${openProd}"][data-f="desc"]`);if(el)el.focus()}}
   else if(a==='delProd'){S.prods.splice(i,1);if(!S.prods.length)S.prods.push(blankProd());openProd=Math.min(openProd,S.prods.length-1);renderProds();update()}
   else if(a==='dupProd'){if(S.prods.length<30){S.prods.splice(i+1,0,{...S.prods[i]});openProd=i+1;renderProds();update()}}
+  else if(a==='trk')openOpFromQuote(b.dataset.id);
   else if(a==='excel')exportExcel();
   else if(a==='syncTest')syncTest();
   else if(a==='syncNow')syncNow(false,true);
@@ -807,8 +856,8 @@ document.addEventListener('click',async e=>{
 });
 
 /* ---------- pantalla principal, clientes (CRM) y navegación ---------- */
-const VIEWS=['home','quote','saved','clients','client','catalog','product','send','login'];
-const TITLES={quote:'Hacer cotización',saved:'Cotizaciones guardadas',clients:'Clientes',client:'Ficha de cliente',catalog:'Catálogo',product:'Producto',send:'Enviar por WhatsApp'};
+const VIEWS=['home','quote','saved','clients','client','catalog','product','send','login','track','op'];
+const TITLES={quote:'Hacer cotización',saved:'Cotizaciones guardadas',clients:'Clientes',client:'Ficha de cliente',catalog:'Catálogo',product:'Producto',send:'Enviar por WhatsApp',track:'Seguimiento',op:'Operación'};
 const ESTADOS=[['nuevo','Nuevo'],['cotizado','Cotizado'],['ganado','Ganado'],['perdido','Perdido']];
 let clients=[],C=null,cNew=false,cPick=false,pickMode=false,cFilter='todos',cQuery='',qQuery='',confirmDelClient=false,newArm=false,cTimer;
 const loadClients=()=>{clients=lsGet('nt_clients',[])};
@@ -830,7 +879,7 @@ function setView(v,push=true){
   if(v==='home')pickMode=false;
   $('#ttl').textContent=(v==='clients'&&pickMode)?'Elegir cliente':(TITLES[v]||'');
   $('#pickNote').hidden=!(v==='clients'&&pickMode);
-  $('#btnBack').textContent=v==='client'?'‹ Clientes':(v==='product'||v==='send')?'‹ Catálogo':'‹ Inicio';
+  $('#btnBack').textContent=v==='client'?'‹ Clientes':(v==='product'||v==='send')?'‹ Catálogo':v==='op'?'‹ Seguimiento':'‹ Inicio';
   if(v==='home')renderHome();
   if(v==='saved'){$('#subtitle').textContent=qCache.length+' guardadas';renderList()}
   if(v==='clients'){$('#subtitle').textContent=clients.length+' clientes';renderClients()}
@@ -838,13 +887,16 @@ function setView(v,push=true){
   if(v==='catalog')renderCatalog();
   if(v==='product')renderProduct();
   if(v==='send')renderSend();
+  if(v==='track')renderTrack();
+  if(v==='op')$('#subtitle').textContent=OP?OP.numero:'';
   if(v==='quote')update();
   window.scrollTo(0,0);
   if(push&&location.hash!=='#'+v){try{history.pushState({v},'','#'+v)}catch(e){}}
 }
-window.addEventListener('popstate',()=>{const v=(location.hash||'#home').slice(1);if(v==='login')return setView(cloudUser?'home':'login',false);if(v==='client'&&!C)return setView('clients',false);if((v==='product'&&!PR)||(v==='send'&&!catSel.size))return setView('catalog',false);setView(VIEWS.includes(v)?v:'home',false)});
+window.addEventListener('popstate',()=>{const v=(location.hash||'#home').slice(1);if(v==='login')return setView(cloudUser?'home':'login',false);if(v==='client'&&!C)return setView('clients',false);if((v==='product'&&!PR)||(v==='send'&&!catSel.size))return setView('catalog',false);if(v==='op'&&!OP)return setView('track',false);setView(VIEWS.includes(v)?v:'home',false)});
 
 function renderHome(){
+  {const act=ops.filter(o=>!['entregada','cancelada'].includes(o.etapa));$('#tTrk').textContent=act.length;$('#tTrkAl').textContent=act.reduce((s,o)=>s+opAlerts(o).length,0)}
   $('#tCat').textContent=catalog.length;$('#tSaved').textContent=qCache.length;$('#tClients').textContent=clients.length;
   $('#tQuote').textContent=S.dirty?'Continuar: '+(S.meta.numero||'borrador')+(S.meta.cliente?' · '+S.meta.cliente:''):'Cotizar una operación de importación';
   const hoy=today(),f=clients.filter(c=>c.proximo&&c.proximo<=hoy&&(c.estado==='nuevo'||c.estado==='cotizado')).sort((a,b)=>a.proximo<b.proximo?-1:1).slice(0,5);
@@ -892,7 +944,7 @@ function renderClientDetail(){
   $('#cdCodigo').value=C.codigo||'Se asigna al guardar';$('#btnSaveC').textContent=cPick?'Guardar y cotizar':'Guardar cliente';
   const ok=!!normPhone(C.telefono);$('#btnWa').disabled=!ok;$('#btnCall').disabled=!ok;
   const qs=clientQuotes(C);
-  $('#cQuotes').innerHTML=qs.length?qs.map(q=>`<div class="q"><div><b>${esc(q.numero)}</b><br><small>${new Date(q.ts).toLocaleDateString('es-BO')}</small></div><div class="amt">${bs(q.total)}</div><div class="acts"><button class="btn sm pri" type="button" data-act="abrir" data-id="${q.id}">Abrir</button></div></div>`).join(''):'<p class="hint">Todavía no tiene cotizaciones.</p>';
+  $('#cQuotes').innerHTML=qs.length?qs.map(q=>`<div class="q"><div><b>${esc(q.numero)}</b><br><small>${new Date(q.ts).toLocaleDateString('es-BO')}${opByQuote(q.id)?' · '+ETL[opByQuote(q.id).etapa]:''}</small></div><div class="amt">${bs(q.total)}</div><div class="acts"><button class="btn sm pri" type="button" data-act="abrir" data-id="${q.id}">Abrir</button></div></div>`).join(''):'<p class="hint">Todavía no tiene cotizaciones.</p>';
   $('#delClientRow').innerHTML=cNew&&!clients.some(x=>x.id===C.id)?'':(confirmDelClient?`<button class="btn danger" type="button" data-go="delClient">Sí, eliminar</button><button class="btn ghost" type="button" data-go="noDelClient">No</button>`:`<button class="btn danger ghost" type="button" data-go="askDelClient">Eliminar</button>`);
 }
 function commitClient(){
@@ -912,7 +964,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-go]');if(!b)return;
   const g=b.dataset.go;
-  if(g==='back'){if(view==='client'){if(String(C.nombre||'').trim())commitClient();setView('clients')}else if(view==='product'||view==='send')setView('catalog');else setView('home')}
+  if(g==='back'){if(view==='client'){if(String(C.nombre||'').trim())commitClient();setView('clients')}else if(view==='product'||view==='send')setView('catalog');else if(view==='op')setView('track');else setView('home')}
   else if(g==='startQuote'){if(S.dirty){show('datos');setView('quote')}else startQuoteFlow()}
   else if(g==='saved'||g==='clients')setView(g);
   else if(g==='soon')toast('El catálogo llega en la próxima versión');
@@ -1061,14 +1113,15 @@ document.addEventListener('input',e=>{
 
 /* ---------- nube compartida (Firebase) ---------- */
 const FB_CFG={apiKey:"AIzaSyA2J3Z4gHQyYYvU8AzSVs9r_L_DG6Ax9AE",authDomain:"crm-novatrade.firebaseapp.com",projectId:"crm-novatrade",storageBucket:"crm-novatrade.firebasestorage.app",messagingSenderId:"944968945401",appId:"1:944968945401:web:c7af94f3b5e478442c9c28"};
-const COLS=['clients','quotes','catalog'];
-let cloudUser=null,cloudRemote={clients:{},quotes:{},catalog:{}},cloudUnsubs=[],cloudT,cloudSeen={},cloudMsg='';
+const COLS=['clients','quotes','catalog','ops'];
+let cloudUser=null,cloudRemote={clients:{},quotes:{},catalog:{},ops:{}},cloudUnsubs=[],cloudT,cloudSeen={},cloudMsg='';
 const strip=o=>JSON.parse(JSON.stringify(o));
-const cl_get={clients:()=>clients,quotes:()=>lsGet('nt_quotes',[]),catalog:()=>catalog};
-const cl_upd={clients:c=>c.actualizado||c.creado||0,quotes:q=>q.ts||0,catalog:p=>p.upd||0};
+const cl_get={clients:()=>clients,quotes:()=>lsGet('nt_quotes',[]),catalog:()=>catalog,ops:()=>ops};
+const cl_upd={clients:c=>c.actualizado||c.creado||0,quotes:q=>q.ts||0,catalog:p=>p.upd||0,ops:o=>o.upd||0};
 function cl_set(col,arr){
   if(col==='clients'){clients=arr;saveClients();updateDatalist()}
   else if(col==='quotes'){lsSet('nt_quotes',arr);loadList()}
+  else if(col==='ops'){ops=arr;saveOps()}
   else{catalog=arr;saveCatalog()}
 }
 function addTomb(col,id){const l=lsGet('nt_tomb',[]);l.push({col,id,upd:Date.now()});lsSet('nt_tomb',l);cloudPushSoon()}
@@ -1101,7 +1154,7 @@ function bumpCounters(){
   if(mc>(lsGet('nt_ccounter',0)||0))lsSet('nt_ccounter',mc)
 }
 function cloudRefresh(){
-  if(view==='home')renderHome();else if(view==='clients')renderClients();else if(view==='saved')renderList();else if(view==='catalog')renderCatalog()
+  if(view==='home')renderHome();else if(view==='clients')renderClients();else if(view==='saved')renderList();else if(view==='catalog')renderCatalog();else if(view==='track')renderTrack()
 }
 function mergeRemote(col,docs,fromCache){
   cloudRemote[col]={};docs.forEach(d=>{cloudRemote[col][d.id]={upd:d.upd||0,deleted:!!d.deleted}});
@@ -1157,6 +1210,160 @@ document.addEventListener('change',e=>{
   if(e.target.id==='cuPref'){cfg.pref=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);e.target.value=cfg.pref;lsSet('nt_cfg',cfg);toast('Sigla guardada: se usa en los números nuevos')}
 });
 window.addEventListener('online',()=>{if(cloudUser)cloudPush()});
+
+
+/* ---------- seguimiento de operaciones ---------- */
+const ETAPAS=[['enviada','Cotización enviada'],['confirmada','Confirmada'],['pedido','Pedido realizado'],['transito','En tránsito'],['aduana','En aduana'],['entregada','Entregada']];
+const ETL=Object.fromEntries(ETAPAS.concat([['cancelada','Cancelada']]));
+const COSTOS=[['prod','Producto (FOB)'],['flete','Flete'],['ga','Gravamen'],['otros','Otros gastos'],['iva','IVA import.']];
+const DAYMS=86400000;
+let ops=lsGet('nt_ops',[]),OP=null,trkFilter='activas',opTimer,opCancelArm=false,opDelArm=false;
+const saveOps=()=>lsSet('nt_ops',ops);
+const opByQuote=qid=>ops.find(o=>o.quoteId===qid);
+const r2=x=>Math.round((+x||0)*100)/100;
+const daysTo=s=>Math.round((new Date(s+'T12:00:00')-new Date(today()+'T12:00:00'))/DAYMS);
+function opCotizado(o){
+  const q=lsGet('nt_quotes',[]).find(x=>x.id===o.quoteId);
+  if(q){const r=calcular({...DEF,...q.params},(q.prods||[]).map(p=>({...blankProd(),...p})));
+    return {prod:r.costoProd,flete:r.fleteBs,ga:r.ga,otros:r.rows.reduce((s,w)=>s+w.O,0),iva:r.iva,neto:r.costoNeto,fob:r.FOB,total:r.totalFact}}
+  return o.cot||{prod:0,flete:0,ga:0,otros:0,iva:0,neto:0,fob:0,total:0}
+}
+function opAlerts(o){
+  const a=[],now=Date.now(),h=o.hist||[],last=(h.length?h[h.length-1].ts:o.creado)||now,dias=Math.floor((now-last)/DAYMS);
+  if(o.etapa==='enviada'&&dias>=3)a.push({k:'aw',t:`Sin respuesta hace ${dias} días: dar seguimiento al cliente`});
+  if((o.etapa==='confirmada'||o.etapa==='pedido')&&dias>=10)a.push({k:'aw',t:`${dias} días sin avanzar de etapa`});
+  if(o.eta&&!['entregada','cancelada'].includes(o.etapa)){const d=daysTo(o.eta);
+    if(d<0)a.push({k:'ab',t:`Atrasada ${-d} día${-d===1?'':'s'} (ETA ${fmtDate(o.eta)})`});
+    else if(d<=7)a.push({k:'aw',t:d===0?'Llega hoy':`Llega en ${d} día${d===1?'':'s'} (ETA ${fmtDate(o.eta)})`})}
+  const pag=(o.pagos||[]).reduce((s,p)=>s+(+p.monto||0),0);
+  if(o.etapa==='aduana'&&(o.pedidoUSD||0)-pag>0.005)a.push({k:'aw',t:`Saldo pendiente de pago: ${usd((o.pedidoUSD||0)-pag)}`});
+  return a
+}
+function renderTrack(){
+  const act=ops.filter(o=>!['entregada','cancelada'].includes(o.etapa));
+  const cnt=k=>k==='activas'?act.length:ops.filter(o=>o.etapa===k).length;
+  $('#trkChips').innerHTML=[['activas','Activas']].concat(ETAPAS.map(([k,l])=>[k,l]),[['cancelada','Canceladas']]).map(([k,l])=>`<button class="chip" type="button" data-go="trkchip" data-k="${k}" aria-pressed="${trkFilter===k}">${l} · ${cnt(k)}</button>`).join('');
+  const al=[];act.forEach(o=>opAlerts(o).forEach(a=>al.push({o,a})));
+  $('#trkAlerts').hidden=!al.length;
+  $('#trkAlertList').innerHTML=al.slice(0,8).map(({o,a})=>`<button class="cl" type="button" data-go="openOp" data-id="${o.id}"><b>${esc(o.clienteNombre)}</b><span class="st st-${o.etapa}">${ETL[o.etapa]}</span><span class="meta"><span class="${a.k}">${esc(a.t)}</span> · ${esc(o.numero)}</span></button>`).join('');
+  const sorted=l=>l.slice().sort((a,b)=>(a.eta||'9999')<(b.eta||'9999')?-1:(a.eta||'9999')>(b.eta||'9999')?1:(b.upd||0)-(a.upd||0));
+  const card=o=>{const al2=opAlerts(o)[0];return `<button class="cl" type="button" data-go="openOp" data-id="${o.id}"><b>${esc(o.clienteNombre)}</b><span class="st st-${o.etapa}">${ETL[o.etapa]}</span>
+    <small style="grid-column:1/-1">${esc(o.numero)} · ${bs(o.total)}${o.proveedor?' · '+esc(o.proveedor):''}</small>
+    <span class="meta">${o.eta?'ETA '+fmtDate(o.eta):'Sin fecha de llegada'}${al2?` · <span class="${al2.k}">${esc(al2.t)}</span>`:''}</span></button>`};
+  let html='';
+  if(trkFilter==='activas'){for(const [k,l] of ETAPAS.slice(0,5)){const g=sorted(act.filter(o=>o.etapa===k));if(g.length)html+=`<div class="grp">${l} (${g.length})</div>`+g.map(card).join('')}}
+  else html=sorted(ops.filter(o=>o.etapa===trkFilter)).map(card).join('');
+  $('#trkList').innerHTML=html||`<p class="hint">${ops.length?'No hay operaciones en esta etapa.':'Aún no hay operaciones. Abra «Cotizaciones» y toque «Seguimiento» en una cotización enviada.'}</p>`;
+  $('#subtitle').textContent=act.length+' activas'
+}
+function openOpFromQuote(qid){
+  let o=opByQuote(qid);
+  if(!o){
+    const q=lsGet('nt_quotes',[]).find(x=>x.id===qid);if(!q)return;
+    const c=clients.find(x=>x.id===(q.meta&&q.meta.clienteId))||clients.find(x=>sameName(x.nombre,q.cliente))||{},cot=opCotizado({quoteId:qid});
+    o={id:'o'+Date.now(),quoteId:qid,numero:q.numero,clienteId:c.id||'',clienteNombre:q.cliente||c.nombre||'',clienteCodigo:c.codigo||(q.meta&&q.meta.clienteCodigo)||'',total:q.total||0,
+      etapa:'enviada',hist:[{etapa:'enviada',ts:Date.now(),nota:''}],proveedor:'',pedidoNum:'',contenedor:'',bl:'',naviera:'',eta:'',pedidoUSD:r2(cot.fob),pagos:[],real:{},notas:'',cot,creado:Date.now(),upd:Date.now()};
+    ops.unshift(o);saveOps();cloudPushSoon();toast('Seguimiento iniciado: cotización enviada')
+  }
+  openOp(o.id)
+}
+function openOp(id){const o=ops.find(x=>x.id===id);if(!o)return;OP=JSON.parse(JSON.stringify(o));opCancelArm=false;opDelArm=false;renderOp();setView('op')}
+function opCommit(){
+  if(!OP)return;OP.upd=Date.now();const c=JSON.parse(JSON.stringify(OP)),i=ops.findIndex(x=>x.id===c.id);
+  if(i>=0)ops[i]=c;else ops.unshift(c);saveOps();cloudPushSoon()
+}
+const opCommitSoon=()=>{clearTimeout(opTimer);opTimer=setTimeout(opCommit,400)};
+function setEtapa(e){
+  if(!OP||OP.etapa===e)return;
+  OP.etapa=e;OP.hist.push({etapa:e,ts:Date.now(),nota:''});
+  if(['confirmada','pedido','transito','aduana','entregada'].includes(e)){
+    const c=clients.find(x=>x.id===OP.clienteId);
+    if(c&&c.estado!=='ganado'){c.estado='ganado';c.actualizado=Date.now();saveClients();cloudPushSoon()}
+  }
+  opCommit();renderOp();toast('Etapa: '+ETL[e])
+}
+function renderOp(){
+  if(!OP)return;
+  $('#opHead').textContent=OP.clienteNombre+(OP.clienteCodigo?' · '+OP.clienteCodigo:'');
+  $('#opSub').textContent='Cotización '+OP.numero+' · '+bs(OP.total);
+  for(const el of $$('[data-of]')){const k=el.dataset.of;if(document.activeElement===el)continue;el.value=k==='pedidoUSD'?(OP.pedidoUSD?showNum(OP.pedidoUSD):''):(OP[k]||'')}
+  renderOpLists();updateOpSummaries()
+}
+function renderOpLists(){
+  $('#opStages').innerHTML=ETAPAS.map(([k,l])=>`<button class="chip" type="button" data-go="setEtapa" data-e="${k}" aria-pressed="${OP.etapa===k}">${l}</button>`).join('');
+  const idx=ETAPAS.findIndex(x=>x[0]===OP.etapa),nb=$('#btnNextE');
+  if(OP.etapa==='cancelada'){nb.hidden=false;nb.textContent='Reactivar operación'}
+  else if(idx>=0&&idx<ETAPAS.length-1){nb.hidden=false;nb.textContent='Avanzar a: '+ETAPAS[idx+1][1]}
+  else nb.hidden=true;
+  $('#opCancelRow').innerHTML=(OP.etapa==='entregada'||OP.etapa==='cancelada')?'':(opCancelArm?'<button class="btn sm danger" type="button" data-go="cancelOp">Sí, cancelar</button><button class="btn sm ghost" type="button" data-go="noCancelOp">No</button>':'<button class="btn sm ghost danger" type="button" data-go="cancelOp">Cancelar operación</button>');
+  $('#opPagos').innerHTML=(OP.pagos||[]).map((p,i)=>`<div class="pay"><select class="plain" data-opay="tipo" data-i="${i}">${['Anticipo','Saldo','Otro'].map(x=>`<option${p.tipo===x?' selected':''}>${x}</option>`).join('')}</select>
+    <input class="plain" inputmode="decimal" placeholder="Monto USD" data-opay="monto" data-i="${i}" value="${p.monto?showNum(p.monto):''}" autocomplete="off">
+    <input class="plain" type="date" data-opay="fecha" data-i="${i}" value="${esc(p.fecha||'')}"><button class="btn sm ghost danger" type="button" data-go="delPay" data-i="${i}">Quitar</button></div>`).join('');
+  const cot=opCotizado(OP);
+  $('#opCostos').innerHTML=COSTOS.map(([k,l])=>`<div class="cost"><span>${l}</span><span class="n">${nf(cot[k],0)}</span><input class="plain" inputmode="decimal" data-ofr="${k}" value="${OP.real&&OP.real[k]!=null?showNum(OP.real[k]):''}" autocomplete="off"><span class="n" id="dif-${k}"></span></div>`).join('');
+  $('#opHist').innerHTML=(OP.hist||[]).slice().reverse().map(h=>`<div class="hist"><b class="st-${h.etapa}">${ETL[h.etapa]||h.etapa}</b><span>${new Date(h.ts).toLocaleString('es-BO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>`).join('');
+  $('#btnOpQuote').hidden=!lsGet('nt_quotes',[]).some(q=>q.id===OP.quoteId);
+  $('#opDelRow').innerHTML=opDelArm?'<button class="btn danger" type="button" data-go="opDel">Sí, eliminar</button><button class="btn ghost" type="button" data-go="noOpDel">No</button>':'<button class="btn danger ghost" type="button" data-go="askOpDel">Eliminar</button>'
+}
+function updateOpSummaries(){
+  if(!OP)return;
+  const pag=(OP.pagos||[]).reduce((s,p)=>s+(+p.monto||0),0),tot=+OP.pedidoUSD||0;
+  $('#payTot').textContent=tot>0?`Pagado: ${usd(pag)} de ${usd(tot)} · Pendiente: ${usd(tot-pag)}`:`Pagado: ${usd(pag)}`;
+  const cot=opCotizado(OP);let rn=0,cn=0,any=false;
+  for(const [k] of COSTOS){
+    const r=OP.real&&OP.real[k],el=$('#dif-'+k);if(!el)continue;
+    if(r==null||r===''){el.textContent='';continue}
+    any=true;const d=r-cot[k];el.textContent=(d>0?'+':'')+nf(d,0);el.style.color=d>0?'var(--bad)':d<0?'var(--good)':'';
+    if(k!=='iva'){rn+=+r;cn+=cot[k]}
+  }
+  $('#costTot').textContent=any?`Costo neto (sin IVA): cotizado ${bs(cot.neto)} · real ${bs(rn)} (según lo ingresado) · diferencia en lo ingresado ${rn-cn>0?'+':''}${nf(rn-cn,0)} Bs`:'Ingrese los costos reales a medida que se conozcan para compararlos con la cotización.'
+}
+function opMsg(){
+  const c=clients.find(x=>x.id===OP.clienteId),nom=c?(c.contacto||c.nombre):OP.clienteNombre;
+  const est={enviada:'le enviamos la cotización',confirmada:'su cotización fue confirmada',pedido:'su pedido fue realizado al proveedor',transito:'su mercadería está en tránsito',aduana:'su mercadería está en proceso de aduana',entregada:'su pedido fue entregado',cancelada:'la operación fue cancelada'}[OP.etapa];
+  return `Hola ${nom}, le informamos sobre la cotización ${OP.numero}: ${est}.`+(OP.eta&&!['entregada','cancelada'].includes(OP.etapa)?` Fecha estimada de llegada: ${fmtDate(OP.eta)}.`:'')+(OP.contenedor&&['transito','aduana'].includes(OP.etapa)?` Contenedor: ${OP.contenedor}.`:'')+'\n\nNovatrade Import & Export'+(cfg.tel?'\n'+cfg.tel:'')
+}
+function exportOps(){
+  return ops.slice().sort((a,b)=>a.creado-b.creado).map(o=>{
+    const c=opCotizado(o),pag=(o.pagos||[]).reduce((s,p)=>s+(+p.monto||0),0),r=o.real||{},ks=['prod','flete','ga','otros'],has=ks.some(k=>r[k]!=null&&r[k]!==''),rn=ks.reduce((s,k)=>s+(+r[k]||0),0),cn=ks.reduce((s,k)=>s+((r[k]!=null&&r[k]!=='')?c[k]:0),0);
+    const row={'N.º cotización':o.numero,'Cód. cliente':o.clienteCodigo,'Cliente':o.clienteNombre,'Etapa':ETL[o.etapa],'Proveedor':o.proveedor,'N.º pedido':o.pedidoNum,'Naviera':o.naviera,'Contenedor':o.contenedor,'BL':o.bl,'ETA':o.eta?fmtDate(o.eta):'',
+      'Pedido (USD)':o.pedidoUSD||0,'Pagado (USD)':r2(pag),'Pendiente (USD)':r2((o.pedidoUSD||0)-pag),'Total facturado (Bs)':o.total||0,'Costo neto cotizado (Bs)':r2(c.neto),'Costo neto real (Bs)':has?r2(rn):'','Diferencia (Bs) en lo ingresado':has?r2(rn-cn):''};
+    for(const [k,l] of ETAPAS){const h=(o.hist||[]).find(x=>x.etapa===k);row['Fecha: '+l]=h?new Date(h.ts).toLocaleDateString('es-BO'):''}
+    row['Notas']=o.notas||'';return row})
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-go]');if(!b)return;const g=b.dataset.go;
+  if(g==='track')setView('track');
+  else if(g==='trkchip'){trkFilter=b.dataset.k;renderTrack()}
+  else if(g==='openOp')openOp(b.dataset.id);
+  else if(g==='setEtapa')setEtapa(b.dataset.e);
+  else if(g==='nextEtapa'){if(OP.etapa==='cancelada')setEtapa('enviada');else{const i=ETAPAS.findIndex(x=>x[0]===OP.etapa);if(i>=0&&i<ETAPAS.length-1)setEtapa(ETAPAS[i+1][0])}}
+  else if(g==='cancelOp'){if(opCancelArm){opCancelArm=false;setEtapa('cancelada')}else{opCancelArm=true;renderOpLists()}}
+  else if(g==='noCancelOp'){opCancelArm=false;renderOpLists()}
+  else if(g==='addPay'){const ant=(OP.pagos||[]).length?'Saldo':'Anticipo';OP.pagos=(OP.pagos||[]).concat([{tipo:ant,monto:0,fecha:today()}]);opCommit();renderOpLists();updateOpSummaries()}
+  else if(g==='delPay'){OP.pagos.splice(+b.dataset.i,1);opCommit();renderOpLists();updateOpSummaries()}
+  else if(g==='opTrack'){
+    const n=(OP.contenedor||OP.bl||'').trim(),nav=(OP.naviera||'').toLowerCase().replace(/[^a-z]/g,'');
+    if(!n){toast('Ingrese el N.º de contenedor o BL');return}
+    const U={msc:'https://www.msc.com/en/track-a-shipment',maersk:'https://www.maersk.com/tracking/'+encodeURIComponent(n),cmacgm:'https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy=Container&Reference='+encodeURIComponent(n),hapaglloyd:'https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html',cosco:'https://elines.coscoshipping.com/ebusiness/cargoTracking',one:'https://ecomm.one-line.com/one-ecom/manage-shipment/cargo-tracking',evergreen:'https://www.shipmentlink.com/en-global/tvs2/jsp/TVS2_Container.jsp'};
+    const url=U[nav]||('https://www.google.com/search?q='+encodeURIComponent('track container '+n));
+    try{navigator.clipboard&&navigator.clipboard.writeText(n).catch(()=>{})}catch(_){}
+    toast('Número '+n+' copiado: péguelo en la página de la naviera');window.open(url,'_blank','noopener')}
+  else if(g==='opWa'){const c=clients.find(x=>x.id===OP.clienteId),msg=opMsg(),ph=c&&normPhone(c.telefono);window.open(ph?waLink(c.telefono,msg):'https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener')}
+  else if(g==='opQuote'){const q=qCache.find(x=>x.id===OP.quoteId);if(q)adopt(q,false)}
+  else if(g==='askOpDel'){opDelArm=true;renderOpLists()}
+  else if(g==='noOpDel'){opDelArm=false;renderOpLists()}
+  else if(g==='opDel'){ops=ops.filter(x=>x.id!==OP.id);saveOps();addTomb('ops',OP.id);OP=null;toast('Operación eliminada');setView('track')}
+});
+document.addEventListener('input',e=>{
+  const t=e.target;if(!OP)return;
+  if(t.dataset&&t.dataset.of){const k=t.dataset.of;OP[k]=k==='pedidoUSD'?parseNum(t.value):t.value;opCommitSoon();updateOpSummaries()}
+  else if(t.dataset&&t.dataset.ofr){OP.real=OP.real||{};OP.real[t.dataset.ofr]=String(t.value).trim()===''?null:parseNum(t.value);opCommitSoon();updateOpSummaries()}
+  else if(t.dataset&&t.dataset.opay){const p=OP.pagos[+t.dataset.i];if(p){p[t.dataset.opay]=t.dataset.opay==='monto'?parseNum(t.value):t.value;opCommitSoon();updateOpSummaries()}}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;if(OP&&t.dataset&&t.dataset.opay==='tipo'){const p=OP.pagos[+t.dataset.i];if(p){p.tipo=t.value;opCommitSoon()}}
+});
 
 /* ---------- arranque ---------- */
 (function init(){
