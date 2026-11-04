@@ -186,7 +186,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
 
 /* seguimiento */
 .grp{margin:8px 0 0;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.st-enviada{color:var(--muted)}.st-confirmada,.st-pedido,.st-transito,.st-aduana{color:var(--accent)}.st-entregada{color:var(--good)}.st-cancelada{color:var(--bad)}
+.st-enviada{color:var(--muted)}.st-confirmada,.st-pedido,.st-transito,.st-aduana{color:var(--accent)}.st-entregada,.st-disponible{color:var(--good)}.st-demorado{color:var(--warn)}.st-cancelada{color:var(--bad)}
 .pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
 .cost{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.9fr);gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
 .cost.head{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
@@ -356,17 +356,19 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
       <div class="card"><h2 id="opHead">Operación</h2><p class="hint" id="opSub" style="margin:0 0 10px"></p>
         <div class="chips" id="opStages"></div>
         <div class="row" style="margin-top:12px"><button class="btn pri sm" data-go="nextEtapa" id="btnNextE" type="button">Avanzar</button><span id="opCancelRow"></span></div>
-        <div id="opAlertsBox" style="margin-top:10px;display:flex;flex-direction:column;gap:4px"></div></div>
+        <div id="opAlertsBox" style="margin-top:10px;display:flex;flex-direction:column;gap:4px"></div>
+        <label class="f full" style="margin-top:14px"><span>Comentario informativo (lo ve el cliente)</span><textarea class="ta" data-of="comentario" placeholder="Ej.: La carga llegó a Iquique, en traslado a Santa Cruz."></textarea></label></div>
       <div class="card"><h2>Seguimiento para el cliente</h2>
         <p class="hint" style="margin:0 0 8px">El cliente ve el estado de su pedido con este código, sin precios ni costos.</p>
         <p style="font-size:26px;font-weight:800;letter-spacing:.08em;margin:0 0 4px" id="opCode"></p><p class="hint" id="opPubHint" style="margin:0 0 12px"></p>
         <div class="row"><button class="btn pri sm" data-go="opShare" type="button">Enviar código por WhatsApp</button><button class="btn sm" data-go="opCopy" type="button">Copiar enlace</button><button class="btn sm" data-go="opPage" type="button">Ver página</button></div></div>
       <div class="card"><h2>Pedido y embarque</h2><div class="grid">
+        <label class="f full"><span>Modalidad de transporte</span><select class="plain" data-of="modalidad"><option value="">Seleccionar…</option><option>Aéreo</option><option>Marítimo</option><option>Terrestre</option></select></label>
         <label class="f full"><span>Proveedor</span><input class="plain" data-of="proveedor" autocomplete="off"></label>
         <label class="f"><span>N.º de pedido</span><input class="plain" data-of="pedidoNum" autocomplete="off"></label>
-        <label class="f"><span>Naviera</span><input class="plain" data-of="naviera" list="dlNav" autocomplete="off"><datalist id="dlNav"><option value="MSC"><option value="Maersk"><option value="CMA CGM"><option value="Hapag-Lloyd"><option value="COSCO"><option value="ONE"><option value="Evergreen"></datalist></label>
+        <label class="f"><span>Naviera</span><input class="plain" data-of="naviera" list="dlNav" autocomplete="off"><datalist id="dlNav"><option value="MSC"><option value="Maersk"><option value="COSCO"><option value="CMA CGM"><option value="Hapag-Lloyd"><option value="ONE"><option value="Evergreen"><option value="DHL"><option value="FedEx"><option value="UPS"></datalist></label>
         <label class="f"><span>Contenedor</span><input class="plain" data-of="contenedor" autocomplete="off"></label>
-        <label class="f"><span>BL (conocimiento de embarque)</span><input class="plain" data-of="bl" autocomplete="off"></label>
+        <label class="f"><span>BL o Documento de Embarque</span><input class="plain" data-of="bl" autocomplete="off"></label>
         <label class="f full"><span>Fecha estimada de llegada (ETA)</span><input class="plain" type="date" data-of="eta"></label></div><div class="row" style="margin-top:12px"><button class="btn sm" data-go="opTrack" type="button">Rastrear contenedor en la naviera</button></div><p class="hint" id="trackHint" style="margin-top:8px">Copia el N.º de contenedor y abre la página de la naviera. Luego anote aquí la etapa y la ETA.</p></div>
       <div class="card"><h2>Pagos al proveedor (USD)</h2>
         <label class="f full"><span>Monto total del pedido (USD)</span><input class="plain" inputmode="decimal" data-of="pedidoUSD" autocomplete="off"></label>
@@ -1220,17 +1222,30 @@ window.addEventListener('online',()=>{if(cloudUser)cloudPush()});
 
 
 /* ---------- seguimiento de operaciones ---------- */
-const ETAPAS=[['enviada','Cotización enviada'],['confirmada','Confirmada'],['pedido','Pedido realizado'],['transito','En tránsito'],['aduana','En aduana'],['entregada','Entregada']];
+const ETAPAS=[['enviada','Cotización enviada'],['confirmada','Confirmada'],['pedido','Pedido realizado'],['transito','En tránsito'],['aduana','En aduana'],['demorado','Demorado por Aduana'],['disponible','Disponible para Entrega'],['entregada','Entregada']];
 const ETL=Object.fromEntries(ETAPAS.concat([['cancelada','Cancelada']]));
 const COSTOS=[['prod','Producto (FOB)'],['flete','Flete'],['ga','Gravamen'],['otros','Otros gastos'],['iva','IVA import.']];
 const DAYMS=86400000;
 let ops=lsGet('nt_ops',[]),OP=null,trkFilter='activas',opTimer,opCancelArm=false,opDelArm=false;
 const saveOps=()=>lsSet('nt_ops',ops);
+const CARRIERS=[
+ ['MSC',n=>'https://www.msc.com/en/track-a-shipment'],
+ ['Maersk',n=>'https://www.maersk.com/tracking/'+encodeURIComponent(n)],
+ ['COSCO',n=>'https://elines.coscoshipping.com/scct/public/ct/base?lang=en&trackingType=CONTAINER'],
+ ['CMA CGM',n=>'https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy=Container&Reference='+encodeURIComponent(n)],
+ ['Hapag-Lloyd',n=>'https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html'],
+ ['ONE',n=>'https://ecomm.one-line.com/one-ecom/manage-shipment/cargo-tracking'],
+ ['Evergreen',n=>'https://www.shipmentlink.com/en-global/tvs2/jsp/TVS2_Container.jsp'],
+ ['DHL',n=>'https://www.dhl.com/bo-es/home/rastreo.html?tracking-id='+encodeURIComponent(n)],
+ ['FedEx',n=>'https://www.fedex.com/fedextrack/?trknbr='+encodeURIComponent(n)],
+ ['UPS',n=>'https://www.ups.com/track?loc=es_BO&tracknum='+encodeURIComponent(n)]];
+const cKey=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'');
+function carrierUrl(name,n){const k=cKey(name);if(!k||!n)return '';const c=CARRIERS.find(x=>cKey(x[0])===k);return c?c[1](n):''}
 function genCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',u=new Uint8Array(6);(window.crypto||{getRandomValues:a=>a.map(()=>Math.random()*256)}).getRandomValues(u);return 'NT-'+Array.from(u,x=>A[x%A.length]).join('')}
 const trkLink=o=>new URL('seguimiento.html?c='+encodeURIComponent(o.codigo),location.href).href;
 function pubDoc(o,activo=true){
   const q=lsGet('nt_quotes',[]).find(x=>x.id===o.quoteId),prod=q?(q.prods||[]).map(p=>(p.desc||'').trim()).filter(Boolean).join(', '):'';
-  return {activo,codigo:o.codigo,cliente:o.clienteNombre||'',producto:prod||'Su pedido',numero:o.numero||'',etapa:o.etapa,hist:(o.hist||[]).map(h=>({etapa:h.etapa,ts:h.ts})),eta:o.eta||'',naviera:o.naviera||'',contenedor:o.contenedor||'',bl:o.bl||'',tel:cfg.tel||'',upd:o.upd||Date.now()}
+  return {activo,codigo:o.codigo,cliente:o.clienteNombre||'',producto:prod||'Su pedido',numero:o.numero||'',etapa:o.etapa,hist:(o.hist||[]).map(h=>({etapa:h.etapa,ts:h.ts})),eta:o.eta||'',naviera:o.naviera||'',modalidad:o.modalidad||'',comentario:o.comentario||'',contenedor:o.contenedor||'',bl:o.bl||'',rastreo:carrierUrl(o.naviera,o.contenedor||o.bl)||'',rastreoNum:o.contenedor||o.bl||'',tel:cfg.tel||'',upd:o.upd||Date.now()}
 }
 function pubPush(){
   if(typeof cloudUser==='undefined'||!cloudUser||!window.NTCloud)return;
@@ -1260,7 +1275,9 @@ function opAlerts(o){
     if(d<0)a.push({k:'ab',t:`Atrasada ${-d} día${-d===1?'':'s'} (ETA ${fmtDate(o.eta)})`});
     else if(d<=7)a.push({k:'aw',t:d===0?'Llega hoy':`Llega en ${d} día${d===1?'':'s'} (ETA ${fmtDate(o.eta)})`})}
   const pag=(o.pagos||[]).reduce((s,p)=>s+(+p.monto||0),0);
-  if(o.etapa==='aduana'&&(o.pedidoUSD||0)-pag>0.005)a.push({k:'aw',t:`Saldo pendiente de pago: ${usd((o.pedidoUSD||0)-pag)}`});
+  if(o.etapa==='demorado'&&dias>=3)a.push({k:'ab',t:`Demorado por aduana hace ${dias} días`});
+  if(o.etapa==='disponible'&&dias>=2)a.push({k:'aw',t:`Disponible para entrega hace ${dias} días: coordinar con el cliente`});
+  if((o.etapa==='aduana'||o.etapa==='demorado'||o.etapa==='disponible')&&(o.pedidoUSD||0)-pag>0.005)a.push({k:'aw',t:`Saldo pendiente de pago: ${usd((o.pedidoUSD||0)-pag)}`});
   return a
 }
 function renderTrack(){
@@ -1275,7 +1292,7 @@ function renderTrack(){
     <small style="grid-column:1/-1">${esc(o.numero)} · ${bs(o.total)}${o.proveedor?' · '+esc(o.proveedor):''}</small>
     <span class="meta">${o.eta?'ETA '+fmtDate(o.eta):'Sin fecha de llegada'}${al2?` · <span class="${al2.k}">${esc(al2.t)}</span>`:''}</span></button>`};
   let html='';
-  if(trkFilter==='activas'){for(const [k,l] of ETAPAS.slice(0,5)){const g=sorted(act.filter(o=>o.etapa===k));if(g.length)html+=`<div class="grp">${l} (${g.length})</div>`+g.map(card).join('')}}
+  if(trkFilter==='activas'){for(const [k,l] of ETAPAS.filter(x=>x[0]!=='entregada')){const g=sorted(act.filter(o=>o.etapa===k));if(g.length)html+=`<div class="grp">${l} (${g.length})</div>`+g.map(card).join('')}}
   else html=sorted(ops.filter(o=>o.etapa===trkFilter)).map(card).join('');
   $('#trkList').innerHTML=html||`<p class="hint">${ops.length?'No hay operaciones en esta etapa.':'Aún no hay operaciones. Abra «Cotizaciones» y toque «Seguimiento» en una cotización enviada.'}</p>`;
   $('#subtitle').textContent=act.length+' activas'
@@ -1314,7 +1331,7 @@ const opCommitSoon=()=>{clearTimeout(opTimer);opTimer=setTimeout(opCommit,400)};
 function setEtapa(e){
   if(!OP||OP.etapa===e)return;
   OP.etapa=e;OP.hist.push({etapa:e,ts:Date.now(),nota:''});
-  if(['confirmada','pedido','transito','aduana','entregada'].includes(e)){
+  if(['confirmada','pedido','transito','aduana','demorado','disponible','entregada'].includes(e)){
     const c=clients.find(x=>x.id===OP.clienteId);
     if(c&&c.estado!=='ganado'){c.estado='ganado';c.actualizado=Date.now();saveClients();cloudPushSoon()}
   }
@@ -1360,13 +1377,13 @@ function updateOpSummaries(){
 }
 function opMsg(){
   const c=clients.find(x=>x.id===OP.clienteId),nom=c?(c.contacto||c.nombre):OP.clienteNombre;
-  const est={enviada:'le enviamos la cotización',confirmada:'su cotización fue confirmada',pedido:'su pedido fue realizado al proveedor',transito:'su mercadería está en tránsito',aduana:'su mercadería está en proceso de aduana',entregada:'su pedido fue entregado',cancelada:'la operación fue cancelada'}[OP.etapa];
-  return `Hola ${nom}, le informamos sobre la cotización ${OP.numero}: ${est}.`+(OP.eta&&!['entregada','cancelada'].includes(OP.etapa)?` Fecha estimada de llegada: ${fmtDate(OP.eta)}.`:'')+(OP.contenedor&&['transito','aduana'].includes(OP.etapa)?` Contenedor: ${OP.contenedor}.`:'')+'\n\nNovatrade Import & Export'+(cfg.tel?'\n'+cfg.tel:'')
+  const est={enviada:'le enviamos la cotización',confirmada:'su cotización fue confirmada',pedido:'su pedido fue realizado al proveedor',transito:'su mercadería está en tránsito',aduana:'su mercadería está en proceso de aduana',demorado:'su mercadería está demorada en aduana, estamos gestionando su liberación',disponible:'su pedido está disponible para entrega',entregada:'su pedido fue entregado',cancelada:'la operación fue cancelada'}[OP.etapa];
+  return `Hola ${nom}, le informamos sobre la cotización ${OP.numero}: ${est}.`+(OP.eta&&!['entregada','cancelada'].includes(OP.etapa)?` Fecha estimada de llegada: ${fmtDate(OP.eta)}.`:'')+(OP.contenedor&&['transito','aduana','demorado'].includes(OP.etapa)?` Contenedor: ${OP.contenedor}.`:'')+'\n\nNovatrade Import & Export'+(cfg.tel?'\n'+cfg.tel:'')
 }
 function exportOps(){
   return ops.slice().sort((a,b)=>a.creado-b.creado).map(o=>{
     const c=opCotizado(o),pag=(o.pagos||[]).reduce((s,p)=>s+(+p.monto||0),0),r=o.real||{},ks=['prod','flete','ga','otros'],has=ks.some(k=>r[k]!=null&&r[k]!==''),rn=ks.reduce((s,k)=>s+(+r[k]||0),0),cn=ks.reduce((s,k)=>s+((r[k]!=null&&r[k]!=='')?c[k]:0),0);
-    const row={'N.º cotización':o.numero,'Cód. cliente':o.clienteCodigo,'Cliente':o.clienteNombre,'Etapa':ETL[o.etapa],'Código seguimiento':o.codigo||'','Proveedor':o.proveedor,'N.º pedido':o.pedidoNum,'Naviera':o.naviera,'Contenedor':o.contenedor,'BL':o.bl,'ETA':o.eta?fmtDate(o.eta):'',
+    const row={'N.º cotización':o.numero,'Cód. cliente':o.clienteCodigo,'Cliente':o.clienteNombre,'Etapa':ETL[o.etapa],'Código seguimiento':o.codigo||'','Proveedor':o.proveedor,'N.º pedido':o.pedidoNum,'Modalidad':o.modalidad||'','Naviera':o.naviera,'Contenedor':o.contenedor,'BL':o.bl,'ETA':o.eta?fmtDate(o.eta):'',
       'Pedido (USD)':o.pedidoUSD||0,'Pagado (USD)':r2(pag),'Pendiente (USD)':r2((o.pedidoUSD||0)-pag),'Total facturado (Bs)':o.total||0,'Costo neto cotizado (Bs)':r2(c.neto),'Costo neto real (Bs)':has?r2(rn):'','Diferencia (Bs) en lo ingresado':has?r2(rn-cn):''};
     for(const [k,l] of ETAPAS){const h=(o.hist||[]).find(x=>x.etapa===k);row['Fecha: '+l]=h?new Date(h.ts).toLocaleDateString('es-BO'):''}
     row['Notas']=o.notas||'';return row})
@@ -1388,10 +1405,9 @@ document.addEventListener('click',e=>{
   else if(g==='opCopy'){const l=trkLink(OP);try{navigator.clipboard.writeText(l).then(()=>toast('Enlace copiado'),()=>toast(l))}catch(_){toast(l)}}
   else if(g==='opPage')window.open(trkLink(OP),'_blank','noopener');
   else if(g==='opTrack'){
-    const n=(OP.contenedor||OP.bl||'').trim(),nav=(OP.naviera||'').toLowerCase().replace(/[^a-z]/g,'');
+    const n=(OP.contenedor||OP.bl||'').trim();
     if(!n){toast('Ingrese el N.º de contenedor o BL');return}
-    const U={msc:'https://www.msc.com/en/track-a-shipment',maersk:'https://www.maersk.com/tracking/'+encodeURIComponent(n),cmacgm:'https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy=Container&Reference='+encodeURIComponent(n),hapaglloyd:'https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html',cosco:'https://elines.coscoshipping.com/ebusiness/cargoTracking',one:'https://ecomm.one-line.com/one-ecom/manage-shipment/cargo-tracking',evergreen:'https://www.shipmentlink.com/en-global/tvs2/jsp/TVS2_Container.jsp'};
-    const url=U[nav]||('https://www.google.com/search?q='+encodeURIComponent('track container '+n));
+    const url=carrierUrl(OP.naviera,n)||('https://www.google.com/search?q='+encodeURIComponent('track container '+n));
     try{navigator.clipboard&&navigator.clipboard.writeText(n).catch(()=>{})}catch(_){}
     toast('Número '+n+' copiado: péguelo en la página de la naviera');window.open(url,'_blank','noopener')}
   else if(g==='opWa'){const c=clients.find(x=>x.id===OP.clienteId),msg=opMsg(),ph=c&&normPhone(c.telefono);window.open(ph?waLink(c.telefono,msg):'https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener')}
