@@ -250,6 +250,7 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
     <div id="view-quote" hidden>
     <!-- DATOS -->
     <section id="tab-datos" role="tabpanel">
+      <div class="card"><h2>Estado de la cotización</h2><div id="qState"></div></div>
       <div class="card"><h2>Operación</h2><div class="grid" id="g-op"></div></div>
       <div class="card"><h2>Transporte internacional</h2><div class="grid" id="g-tr"></div></div>
       <div class="card"><h2>Seguro</h2>
@@ -699,7 +700,8 @@ function guardar(){
   const q={id:S.id,numero:S.meta.numero,cliente:S.meta.cliente||'',ts:Date.now(),total:calc.totalFact,meta:S.meta,params:S.params,prods:S.prods};
   const l=lsGet('nt_quotes',[]).filter(x=>x.id!==q.id);l.unshift(q);
   if(!lsSet('nt_quotes',l.slice(0,300))){toast('No se pudo guardar: sin espacio en el teléfono');return}
-  isExample=false;S.dirty=false;update();loadList();renderHome();syncSoon();cloudPushSoon();toast('Cotización '+q.numero+' guardada'+(nuevoCli?' · cliente agregado al CRM':''))
+  {const o=opByQuote(q.id);if(o){o.numero=q.numero;o.total=q.total;o.clienteNombre=q.cliente||o.clienteNombre;o.upd=Date.now();saveOps()}}
+  isExample=false;S.dirty=false;update();renderQState();loadList();renderHome();syncSoon();cloudPushSoon();toast('Cotización '+q.numero+' guardada'+(nuevoCli?' · cliente agregado al CRM':''))
 }
 let qCache=[],confirmDel=null;
 function loadList(){qCache=lsGet('nt_quotes',[]).sort((a,b)=>b.ts-a.ts);renderList()}
@@ -714,7 +716,7 @@ function renderList(){
 function adopt(q,dup){
   S={id:dup?null:q.id,meta:{...newMeta(),...q.meta},params:{...DEF,...q.params},prods:(q.prods||[]).map(p=>({...blankProd(),...p}))};
   if(dup){S.meta.numero='';S.meta.fecha=today()}
-  isExample=false;openProd=0;buildParams();renderProds();syncParams();syncMeta();show('datos');setView('quote');update()
+  isExample=false;openProd=0;buildParams();renderProds();syncParams();syncMeta();show('datos');setView('quote');update();renderQState()
 }
 function removeQ(id){lsSet('nt_quotes',lsGet('nt_quotes',[]).filter(x=>x.id!==id));addTomb('quotes',id);confirmDel=null;loadList();toast('Eliminada')}
 
@@ -908,7 +910,7 @@ function newQuote(cid){
   clearTimeout(cTimer);C=null;
   S={id:null,meta:newMeta(),params:baseParams(),prods:[blankProd()],dirty:false};isExample=false;pickMode=false;
   {const c=clients.find(x=>x.id===cid);if(c){S.meta.cliente=c.nombre;S.meta.atencion=c.contacto||'';S.meta.clienteId=c.id;S.meta.clienteCodigo=c.codigo||''}}
-  openProd=0;buildParams();renderProds();syncParams();syncMeta();show('datos');setView('quote')
+  openProd=0;buildParams();renderProds();syncParams();syncMeta();show('datos');setView('quote');renderQState()
 }
 function syncClientFromQuote(){
   const name=(S.meta.cliente||'').trim();if(!name)return false;
@@ -1256,16 +1258,30 @@ function renderTrack(){
   $('#trkList').innerHTML=html||`<p class="hint">${ops.length?'No hay operaciones en esta etapa.':'Aún no hay operaciones. Abra «Cotizaciones» y toque «Seguimiento» en una cotización enviada.'}</p>`;
   $('#subtitle').textContent=act.length+' activas'
 }
-function openOpFromQuote(qid){
-  let o=opByQuote(qid);
-  if(!o){
-    const q=lsGet('nt_quotes',[]).find(x=>x.id===qid);if(!q)return;
-    const c=clients.find(x=>x.id===(q.meta&&q.meta.clienteId))||clients.find(x=>sameName(x.nombre,q.cliente))||{},cot=opCotizado({quoteId:qid});
-    o={id:'o'+Date.now(),quoteId:qid,numero:q.numero,clienteId:c.id||'',clienteNombre:q.cliente||c.nombre||'',clienteCodigo:c.codigo||(q.meta&&q.meta.clienteCodigo)||'',total:q.total||0,
-      etapa:'enviada',hist:[{etapa:'enviada',ts:Date.now(),nota:''}],proveedor:'',pedidoNum:'',contenedor:'',bl:'',naviera:'',eta:'',pedidoUSD:r2(cot.fob),pagos:[],real:{},notas:'',cot,creado:Date.now(),upd:Date.now()};
-    ops.unshift(o);saveOps();cloudPushSoon();toast('Seguimiento iniciado: cotización enviada')
-  }
-  openOp(o.id)
+function ensureOp(qid){
+  let o=opByQuote(qid);if(o)return o;
+  const q=lsGet('nt_quotes',[]).find(x=>x.id===qid);if(!q)return null;
+  const c=clients.find(x=>x.id===(q.meta&&q.meta.clienteId))||clients.find(x=>sameName(x.nombre,q.cliente))||{},cot=opCotizado({quoteId:qid});
+  o={id:'o'+Date.now(),quoteId:qid,numero:q.numero,clienteId:c.id||'',clienteNombre:q.cliente||c.nombre||'',clienteCodigo:c.codigo||(q.meta&&q.meta.clienteCodigo)||'',total:q.total||0,
+    etapa:'enviada',hist:[{etapa:'enviada',ts:Date.now(),nota:''}],proveedor:'',pedidoNum:'',contenedor:'',bl:'',naviera:'',eta:'',pedidoUSD:r2(cot.fob),pagos:[],real:{},notas:'',cot,creado:Date.now(),upd:Date.now()};
+  ops.unshift(o);saveOps();cloudPushSoon();return o
+}
+function openOpFromQuote(qid){const o=ensureOp(qid);if(o)openOp(o.id)}
+function renderQState(){
+  const box=$('#qState');if(!box)return;
+  const saved=S&&S.id&&lsGet('nt_quotes',[]).some(x=>x.id===S.id);
+  if(!saved){box.innerHTML='<p class="hint" style="margin:0">Guarde la cotización para poder darle seguimiento (enviada, confirmada, pedido…).</p>';return}
+  const o=opByQuote(S.id),cur=o?o.etapa:null;
+  box.innerHTML='<div class="chips">'+ETAPAS.map(([k,l])=>`<button class="chip" type="button" data-go="qEtapa" data-e="${k}" aria-pressed="${cur===k}">${l}</button>`).join('')+'</div>'
+   +'<p class="hint" style="margin:10px 0 0">'+(o?(cur==='cancelada'?'Operación cancelada.':'Estado actual: <b>'+ETL[cur]+'</b> desde '+fmtDate(new Date((o.hist[o.hist.length-1]||{ts:o.creado}).ts).toISOString().slice(0,10))+'.'):'Sin seguimiento todavía. Toque una etapa para iniciarlo.')+'</p>'
+   +(o?'<div class="row" style="margin-top:10px"><button class="btn sm" type="button" data-go="qOpenOp">Abrir seguimiento completo</button></div>':'')
+}
+function setQuoteEtapa(e){
+  if(!S.id)return;const o=ensureOp(S.id);if(!o)return;
+  if(o.etapa!==e){o.etapa=e;o.hist=(o.hist||[]).concat([{etapa:e,ts:Date.now(),nota:''}]);o.upd=Date.now();
+    if(e!=='enviada'){const c=clients.find(x=>x.id===o.clienteId);if(c&&c.estado!=='ganado'){c.estado='ganado';c.actualizado=Date.now();saveClients()}}
+    saveOps();cloudPushSoon();toast('Estado: '+ETL[e])}
+  renderQState();renderHome()
 }
 function openOp(id){const o=ops.find(x=>x.id===id);if(!o)return;OP=JSON.parse(JSON.stringify(o));opCancelArm=false;opDelArm=false;renderOp();setView('op')}
 function opCommit(){
@@ -1342,6 +1358,8 @@ document.addEventListener('click',e=>{
   else if(g==='noCancelOp'){opCancelArm=false;renderOpLists()}
   else if(g==='addPay'){const ant=(OP.pagos||[]).length?'Saldo':'Anticipo';OP.pagos=(OP.pagos||[]).concat([{tipo:ant,monto:0,fecha:today()}]);opCommit();renderOpLists();updateOpSummaries()}
   else if(g==='delPay'){OP.pagos.splice(+b.dataset.i,1);opCommit();renderOpLists();updateOpSummaries()}
+  else if(g==='qEtapa')setQuoteEtapa(b.dataset.e);
+  else if(g==='qOpenOp'){const o=opByQuote(S.id);if(o)openOp(o.id)}
   else if(g==='opTrack'){
     const n=(OP.contenedor||OP.bl||'').trim(),nav=(OP.naviera||'').toLowerCase().replace(/[^a-z]/g,'');
     if(!n){toast('Ingrese el N.º de contenedor o BL');return}
