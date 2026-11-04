@@ -1,8 +1,8 @@
 /* Service worker del Cotizador Novatrade: permite abrir la app sin internet.
    Cuando publique una versión nueva, cambie el número de VERSION. */
-const VERSION='v4';
+const VERSION='v7';
 const CACHE = 'nt-cotizador-' + VERSION;
-const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'jspdf.umd.min.js', 'jspdf.plugin.autotable.min.js', 'xlsx.mini.min.js',
+const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'jspdf.umd.min.js', 'jspdf.plugin.autotable.min.js', 'xlsx.mini.min.js', 'firebase-bundle.js',
   'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
