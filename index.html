@@ -357,6 +357,10 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
         <div class="chips" id="opStages"></div>
         <div class="row" style="margin-top:12px"><button class="btn pri sm" data-go="nextEtapa" id="btnNextE" type="button">Avanzar</button><span id="opCancelRow"></span></div>
         <div id="opAlertsBox" style="margin-top:10px;display:flex;flex-direction:column;gap:4px"></div></div>
+      <div class="card"><h2>Seguimiento para el cliente</h2>
+        <p class="hint" style="margin:0 0 8px">El cliente ve el estado de su pedido con este código, sin precios ni costos.</p>
+        <p style="font-size:26px;font-weight:800;letter-spacing:.08em;margin:0 0 4px" id="opCode"></p><p class="hint" id="opPubHint" style="margin:0 0 12px"></p>
+        <div class="row"><button class="btn pri sm" data-go="opShare" type="button">Enviar código por WhatsApp</button><button class="btn sm" data-go="opCopy" type="button">Copiar enlace</button><button class="btn sm" data-go="opPage" type="button">Ver página</button></div></div>
       <div class="card"><h2>Pedido y embarque</h2><div class="grid">
         <label class="f full"><span>Proveedor</span><input class="plain" data-of="proveedor" autocomplete="off"></label>
         <label class="f"><span>N.º de pedido</span><input class="plain" data-of="pedidoNum" autocomplete="off"></label>
@@ -1135,6 +1139,7 @@ function cloudErr(e){
 function cloudPushSoon(){if(!cloudUser)return;clearTimeout(cloudT);cloudT=setTimeout(cloudPush,700)}
 function cloudPush(){
   if(!cloudUser||!window.NTCloud)return;
+  try{pubPush()}catch(_){}
   for(const col of COLS){
     for(const it of cl_get[col]()){
       const u=cl_upd[col](it),r=cloudRemote[col][it.id];
@@ -1221,6 +1226,23 @@ const COSTOS=[['prod','Producto (FOB)'],['flete','Flete'],['ga','Gravamen'],['ot
 const DAYMS=86400000;
 let ops=lsGet('nt_ops',[]),OP=null,trkFilter='activas',opTimer,opCancelArm=false,opDelArm=false;
 const saveOps=()=>lsSet('nt_ops',ops);
+function genCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',u=new Uint8Array(6);(window.crypto||{getRandomValues:a=>a.map(()=>Math.random()*256)}).getRandomValues(u);return 'NT-'+Array.from(u,x=>A[x%A.length]).join('')}
+const trkLink=o=>new URL('seguimiento.html?c='+encodeURIComponent(o.codigo),location.href).href;
+function pubDoc(o,activo=true){
+  const q=lsGet('nt_quotes',[]).find(x=>x.id===o.quoteId),prod=q?(q.prods||[]).map(p=>(p.desc||'').trim()).filter(Boolean).join(', '):'';
+  return {activo,codigo:o.codigo,cliente:o.clienteNombre||'',producto:prod||'Su pedido',numero:o.numero||'',etapa:o.etapa,hist:(o.hist||[]).map(h=>({etapa:h.etapa,ts:h.ts})),eta:o.eta||'',naviera:o.naviera||'',contenedor:o.contenedor||'',bl:o.bl||'',tel:cfg.tel||'',upd:o.upd||Date.now()}
+}
+function pubPush(){
+  if(typeof cloudUser==='undefined'||!cloudUser||!window.NTCloud)return;
+  const pub=lsGet('nt_pub',{});let ch=false;
+  for(const o of ops){
+    if(!o.codigo){o.codigo=genCode();o.upd=Date.now();saveOps()}
+    if(pub[o.id]&&pub[o.id].upd>=o.upd)continue;
+    const id=o.id,code=o.codigo,u=o.upd;pub[id]={upd:u,code};ch=true;
+    NTCloud.put('seguimiento',code,pubDoc(o)).catch(e=>{const pp=lsGet('nt_pub',{});delete pp[id];lsSet('nt_pub',pp)})
+  }
+  if(ch)lsSet('nt_pub',pub)
+}
 const opByQuote=qid=>ops.find(o=>o.quoteId===qid);
 const r2=x=>Math.round((+x||0)*100)/100;
 const daysTo=s=>Math.round((new Date(s+'T12:00:00')-new Date(today()+'T12:00:00'))/DAYMS);
@@ -1262,7 +1284,7 @@ function ensureOp(qid){
   let o=opByQuote(qid);if(o)return o;
   const q=lsGet('nt_quotes',[]).find(x=>x.id===qid);if(!q)return null;
   const c=clients.find(x=>x.id===(q.meta&&q.meta.clienteId))||clients.find(x=>sameName(x.nombre,q.cliente))||{},cot=opCotizado({quoteId:qid});
-  o={id:'o'+Date.now(),quoteId:qid,numero:q.numero,clienteId:c.id||'',clienteNombre:q.cliente||c.nombre||'',clienteCodigo:c.codigo||(q.meta&&q.meta.clienteCodigo)||'',total:q.total||0,
+  o={id:'o'+Date.now(),codigo:genCode(),quoteId:qid,numero:q.numero,clienteId:c.id||'',clienteNombre:q.cliente||c.nombre||'',clienteCodigo:c.codigo||(q.meta&&q.meta.clienteCodigo)||'',total:q.total||0,
     etapa:'enviada',hist:[{etapa:'enviada',ts:Date.now(),nota:''}],proveedor:'',pedidoNum:'',contenedor:'',bl:'',naviera:'',eta:'',pedidoUSD:r2(cot.fob),pagos:[],real:{},notas:'',cot,creado:Date.now(),upd:Date.now()};
   ops.unshift(o);saveOps();cloudPushSoon();return o
 }
@@ -1283,7 +1305,7 @@ function setQuoteEtapa(e){
     saveOps();cloudPushSoon();toast('Estado: '+ETL[e])}
   renderQState();renderHome()
 }
-function openOp(id){const o=ops.find(x=>x.id===id);if(!o)return;OP=JSON.parse(JSON.stringify(o));opCancelArm=false;opDelArm=false;renderOp();setView('op')}
+function openOp(id){const o=ops.find(x=>x.id===id);if(!o)return;if(!o.codigo){o.codigo=genCode();o.upd=Date.now();saveOps();cloudPushSoon()}OP=JSON.parse(JSON.stringify(o));opCancelArm=false;opDelArm=false;renderOp();setView('op')}
 function opCommit(){
   if(!OP)return;OP.upd=Date.now();const c=JSON.parse(JSON.stringify(OP)),i=ops.findIndex(x=>x.id===c.id);
   if(i>=0)ops[i]=c;else ops.unshift(c);saveOps();cloudPushSoon()
@@ -1302,6 +1324,8 @@ function renderOp(){
   if(!OP)return;
   $('#opHead').textContent=OP.clienteNombre+(OP.clienteCodigo?' · '+OP.clienteCodigo:'');
   $('#opSub').textContent='Cotización '+OP.numero+' · '+bs(OP.total);
+  $('#opCode').textContent=OP.codigo||'';
+  $('#opPubHint').textContent=(typeof cloudUser!=='undefined'&&cloudUser)?'Se publica solo cada vez que cambia la operación.':'Inicie sesión (Cuenta) para publicar el seguimiento al cliente.';
   for(const el of $$('[data-of]')){const k=el.dataset.of;if(document.activeElement===el)continue;el.value=k==='pedidoUSD'?(OP.pedidoUSD?showNum(OP.pedidoUSD):''):(OP[k]||'')}
   renderOpLists();updateOpSummaries()
 }
@@ -1342,7 +1366,7 @@ function opMsg(){
 function exportOps(){
   return ops.slice().sort((a,b)=>a.creado-b.creado).map(o=>{
     const c=opCotizado(o),pag=(o.pagos||[]).reduce((s,p)=>s+(+p.monto||0),0),r=o.real||{},ks=['prod','flete','ga','otros'],has=ks.some(k=>r[k]!=null&&r[k]!==''),rn=ks.reduce((s,k)=>s+(+r[k]||0),0),cn=ks.reduce((s,k)=>s+((r[k]!=null&&r[k]!=='')?c[k]:0),0);
-    const row={'N.º cotización':o.numero,'Cód. cliente':o.clienteCodigo,'Cliente':o.clienteNombre,'Etapa':ETL[o.etapa],'Proveedor':o.proveedor,'N.º pedido':o.pedidoNum,'Naviera':o.naviera,'Contenedor':o.contenedor,'BL':o.bl,'ETA':o.eta?fmtDate(o.eta):'',
+    const row={'N.º cotización':o.numero,'Cód. cliente':o.clienteCodigo,'Cliente':o.clienteNombre,'Etapa':ETL[o.etapa],'Código seguimiento':o.codigo||'','Proveedor':o.proveedor,'N.º pedido':o.pedidoNum,'Naviera':o.naviera,'Contenedor':o.contenedor,'BL':o.bl,'ETA':o.eta?fmtDate(o.eta):'',
       'Pedido (USD)':o.pedidoUSD||0,'Pagado (USD)':r2(pag),'Pendiente (USD)':r2((o.pedidoUSD||0)-pag),'Total facturado (Bs)':o.total||0,'Costo neto cotizado (Bs)':r2(c.neto),'Costo neto real (Bs)':has?r2(rn):'','Diferencia (Bs) en lo ingresado':has?r2(rn-cn):''};
     for(const [k,l] of ETAPAS){const h=(o.hist||[]).find(x=>x.etapa===k);row['Fecha: '+l]=h?new Date(h.ts).toLocaleDateString('es-BO'):''}
     row['Notas']=o.notas||'';return row})
@@ -1360,6 +1384,9 @@ document.addEventListener('click',e=>{
   else if(g==='delPay'){OP.pagos.splice(+b.dataset.i,1);opCommit();renderOpLists();updateOpSummaries()}
   else if(g==='qEtapa')setQuoteEtapa(b.dataset.e);
   else if(g==='qOpenOp'){const o=opByQuote(S.id);if(o)openOp(o.id)}
+  else if(g==='opShare'){const c=clients.find(x=>x.id===OP.clienteId),nom=c?(c.contacto||c.nombre):OP.clienteNombre,msg=`Hola ${nom}, puede ver el estado de su pedido (cotización ${OP.numero}) en cualquier momento aquí:\n${trkLink(OP)}\n\nSu código de seguimiento: ${OP.codigo}\n\nNovatrade Import & Export`+(cfg.tel?'\n'+cfg.tel:''),ph=c&&normPhone(c.telefono);window.open(ph?waLink(c.telefono,msg):'https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener')}
+  else if(g==='opCopy'){const l=trkLink(OP);try{navigator.clipboard.writeText(l).then(()=>toast('Enlace copiado'),()=>toast(l))}catch(_){toast(l)}}
+  else if(g==='opPage')window.open(trkLink(OP),'_blank','noopener');
   else if(g==='opTrack'){
     const n=(OP.contenedor||OP.bl||'').trim(),nav=(OP.naviera||'').toLowerCase().replace(/[^a-z]/g,'');
     if(!n){toast('Ingrese el N.º de contenedor o BL');return}
@@ -1371,7 +1398,7 @@ document.addEventListener('click',e=>{
   else if(g==='opQuote'){const q=qCache.find(x=>x.id===OP.quoteId);if(q)adopt(q,false)}
   else if(g==='askOpDel'){opDelArm=true;renderOpLists()}
   else if(g==='noOpDel'){opDelArm=false;renderOpLists()}
-  else if(g==='opDel'){ops=ops.filter(x=>x.id!==OP.id);saveOps();addTomb('ops',OP.id);OP=null;toast('Operación eliminada');setView('track')}
+  else if(g==='opDel'){try{if(OP.codigo&&typeof cloudUser!=='undefined'&&cloudUser&&window.NTCloud)NTCloud.put('seguimiento',OP.codigo,{activo:false,upd:Date.now()}).catch(()=>{})}catch(_){}ops=ops.filter(x=>x.id!==OP.id);saveOps();addTomb('ops',OP.id);OP=null;toast('Operación eliminada');setView('track')}
 });
 document.addEventListener('input',e=>{
   const t=e.target;if(!OP)return;
