@@ -51,6 +51,7 @@ header.top{display:flex;align-items:center;gap:14px;padding:14px 0 10px}
 .pill{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
 .pill.ok{color:var(--good)} .pill.warn{color:var(--warn)}
 main>section{display:flex;flex-direction:column;gap:14px;padding-top:6px}
+main>#view-home{padding-top:0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
 .card h2{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -157,6 +158,52 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
 .tile.soon{opacity:.62}
 .tile .tag{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--surface2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:2px 7px}
 .count{font-variant-numeric:tabular-nums}
+/* ===== INICIO (diseño B) ===== */
+:root{--h-bg:#cdbf9c;--h-card:#ffffff;--h-line:#b8a67a;--h-navy:#1c3556;--h-nav:#1c3556;--h-navt:#a9c8ea;--h-cta:#1f6aa8;--h-chip:#e6f0fa;
+ --h-gbg:#c8ecd4;--h-gline:#86c79e;--h-gink:#000000;--h-abg:#ffd84a;--h-aline:#d9a800;--h-aink:#7a1410;--h-seg:#d7e0ea;--h-sh:0 3px 10px rgba(20,38,58,.12)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--h-bg:#0e1722;--h-card:#152232;--h-line:#26384c;--h-navy:#152232;--h-nav:#152232;--h-chip:#1a2b3e;--h-cta:#2b7fc4;--h-gbg:#153324;--h-gline:#2c6a49;--h-gink:#e1f6ea;--h-abg:#4a3a0a;--h-aline:#8a6a10;--h-aink:#ffd9d2;--h-seg:#26384c;--h-sh:none}}
+:root[data-theme="dark"]{--h-bg:#0e1722;--h-card:#152232;--h-line:#26384c;--h-navy:#152232;--h-nav:#152232;--h-chip:#1a2b3e;--h-cta:#2b7fc4;--h-gbg:#153324;--h-gline:#2c6a49;--h-gink:#e1f6ea;--h-abg:#4a3a0a;--h-aline:#8a6a10;--h-aink:#ffd9d2;--h-seg:#26384c;--h-sh:none}
+html.inhome,body.inhome{background:var(--h-bg)}
+body.inhome{padding-block:0 calc(88px + env(safe-area-inset-bottom,0px))}
+.hh{display:flex;align-items:center;gap:14px;background:var(--h-navy);border-radius:0 0 22px 22px;padding:22px 16px 76px;margin:0 -16px;position:relative}
+.hplate{width:74px;height:74px;border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.hplate img{width:58px;height:auto;display:block}
+.ht{flex:1;min-width:0}.ht small{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#a9c8ea}
+.ht h1{margin:2px 0 0;font-size:21px;font-weight:800;line-height:1.15;color:#fff}
+.hpill{font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border-radius:99px;padding:6px 10px;white-space:nowrap}
+.hpill.ok::before,.hpill.warn::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#5fd39a}.hpill.warn::before{background:#ffb400}
+.hc{background:var(--h-card);border:1.5px solid var(--h-line);border-radius:16px;padding:12px 14px;box-shadow:var(--h-sh);color:var(--ink);min-width:0}
+.hc.hfirst{margin-top:-58px;position:relative;border-radius:18px;padding:14px 16px;box-shadow:0 6px 18px rgba(20,38,58,.18)}
+.hc h2{margin:0;font-size:16px;font-weight:800;color:var(--navy);letter-spacing:0;text-transform:none}
+.hrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.hlink{background:none;border:0;padding:6px 0 6px 10px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer}
+.hcnt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px;text-align:center}
+.hcnt b{display:block;font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}.hcnt span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-top:5px}
+.hcnt .c1{color:var(--navy)}.hcnt .c2{color:var(--accent)}.hcnt .c3{color:var(--warn)}.hcnt .c4{color:var(--good)}
+.hbar{display:flex;gap:4px;margin-top:12px}.hbar i{flex:1;height:6px;border-radius:3px;background:var(--h-seg)}
+.hbar i.on:nth-child(1){background:var(--navy)}.hbar i.on:nth-child(2){background:var(--accent)}.hbar i.on:nth-child(3){background:var(--warn)}.hbar i.on:nth-child(4){background:var(--good)}
+.hop{display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;width:100%}
+.hop[hidden]{display:none}
+.hopi{width:42px;height:42px;border-radius:12px;background:var(--h-chip);display:flex;align-items:center;justify-content:center;flex:none}
+.hopi svg,.htile svg{fill:none;stroke:var(--accent);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.hopi svg{width:23px;height:23px}
+.hopt{flex:1;min-width:0;display:block}.hopt b{display:block;font-size:15px;font-weight:800;color:var(--navy);line-height:1.25}.hopt small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-top:3px}
+.halert{display:flex;align-items:center;gap:5px;flex:none;font-size:12px;font-weight:800;color:var(--h-aink);background:var(--h-abg);border:1px solid var(--h-aline);border-radius:10px;padding:6px 9px}.halert svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.hcta{display:flex;align-items:center;gap:12px;text-align:left;width:100%;cursor:pointer;background:var(--h-cta);color:#fff;border:0;border-radius:16px;padding:14px 16px;box-shadow:0 4px 12px rgba(31,106,168,.35)}
+.hcta>svg{width:24px;height:24px;flex:none;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.hctat{flex:1;min-width:0;display:block}.hctat b{display:block;font-size:17px;font-weight:800}.hctat small{display:block;font-size:12.5px;font-weight:600;color:#d6e8f8;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.htiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.htile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;cursor:pointer;min-height:86px}
+.htile svg{width:26px;height:26px;margin-bottom:4px}.htile b{font-size:15px;font-weight:800;color:var(--navy)}.htile small{font-size:12px;font-weight:700;color:var(--muted);line-height:1.3}
+.hgreen{background:var(--h-gbg);border-color:var(--h-gline);color:var(--h-gink)}.hgreen h2{color:var(--h-gink);margin-bottom:8px}
+.hfl{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:6px 0;cursor:pointer;color:var(--h-gink)}
+.hfl i{width:9px;height:9px;border-radius:50%;background:var(--bad);flex:none}.hfl span{flex:1;min-width:0}.hfl b{display:block;font-size:14px;font-weight:800}.hfl small{display:block;font-size:12px;font-weight:700}
+.hfl svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hnav{position:fixed;left:0;right:0;bottom:0;background:var(--h-nav);z-index:20;padding-bottom:env(safe-area-inset-bottom,0px)}
+.hnavin{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 6px 10px}
+.hnavin button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;color:var(--h-navt);cursor:pointer;font-size:11px;font-weight:700}
+.hnavin button[aria-current]{color:#fff;font-weight:800}
+.hnavin svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
 /* clientes */
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
@@ -216,18 +263,23 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
     </section>
 
     <!-- PANTALLA PRINCIPAL -->
-    <section id="view-home" style="display:flex;flex-direction:column;gap:14px">
-      <div class="hero"><span class="pill ok" id="homePill">En línea</span>
-        <div class="plate"><img id="logoHero" alt="Novatrade Import &amp; Export"></div>
-        <h1>Cotizador de importación</h1><p>¿Qué hacemos hoy?</p></div>
-      <div class="tiles">
-        <button class="tile pri" data-go="startQuote" type="button"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg><b>Hacer cotización</b><small id="tQuote">Cotizar una operación de importación</small></button>
-        <button class="tile" data-go="saved" type="button"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><b>Cotizaciones</b><small><span class="count" id="tSaved">0</span> guardadas</small></button>
-        <button class="tile" data-go="clients" type="button"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><path d="M16 5.2a3 3 0 010 5.6M18.5 15.3c1.6.7 2.6 2.1 2.9 4.7"/></svg><b>Clientes</b><small><span class="count" id="tClients">0</span> en el CRM</small></button>
-        <button class="tile" data-go="catalog" type="button"><svg viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><b>Catálogo</b><small><span class="count" id="tCat">0</span> productos para enviar por WhatsApp</small></button>
-        <button class="tile" data-go="track" type="button"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><b>Seguimiento</b><small><span class="count" id="tTrk">0</span> activas · <span class="count" id="tTrkAl">0</span> alertas</small></button>
+    <section id="view-home" style="display:flex;flex-direction:column;gap:10px">
+      <div class="hh"><div class="hplate"><img id="logoHero" alt="Novatrade Import &amp; Export"></div>
+        <div class="ht"><small>Cotizador</small><h1>¿Qué hacemos hoy?</h1></div>
+        <span class="hpill ok" id="homePill">En línea</span></div>
+      <div class="hc hfirst"><div class="hrow"><h2>Importaciones en curso</h2><button class="hlink" data-go="track" type="button">Ver todas</button></div>
+        <div class="hcnt"><div><b class="c1" id="hcPed">0</b><span>Pedido</span></div><div><b class="c2" id="hcTra">0</b><span>Tránsito</span></div><div><b class="c3" id="hcAdu">0</b><span>Aduana</span></div><div><b class="c4" id="hcDis">0</b><span>Disponible</span></div></div>
+        <div class="hbar" aria-hidden="true"><i id="hbPed"></i><i id="hbTra"></i><i id="hbAdu"></i><i id="hbDis"></i></div>
+        <p class="hint" id="hcNone" style="margin:10px 0 0" hidden>No hay importaciones en curso.</p></div>
+      <button class="hc hop" id="hOp" data-go="openOp" data-id="" type="button" hidden><span class="hopi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span><span class="hopt"><b id="hOpT"></b><small id="hOpS"></small></span><span class="halert" id="hOpA" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/></svg><span id="hOpAn"></span></span></button>
+      <button class="hcta" data-go="startQuote" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="hctat"><b>Hacer cotización</b><small id="tQuote">Cotizar una operación de importación</small></span></button>
+      <div class="htiles">
+        <button class="hc htile" data-go="saved" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><b>Cotizaciones</b><small><span class="count" id="tSaved">0</span> <span id="tSavedW">guardadas</span></small></button>
+        <button class="hc htile" data-go="clients" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><path d="M16 5.2a3 3 0 010 5.6M18.5 15.3c1.6.7 2.6 2.1 2.9 4.7"/></svg><b>Clientes</b><small><span class="count" id="tClients">0</span> en el CRM</small></button>
+        <button class="hc htile" data-go="catalog" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><b>Catálogo</b><small><span class="count" id="tCat">0</span> productos para WhatsApp</small></button>
+        <button class="hc htile" data-go="track" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><b>Seguimiento</b><small><span class="count" id="tTrk">0</span> activas · <span class="count" id="tTrkAl">0</span> <span id="tTrkAlW">alertas</span></small></button>
       </div>
-      <div class="card" id="homeFollowCard" hidden><h2>Seguimientos para hoy</h2><div id="homeFollow" style="display:flex;flex-direction:column;gap:8px"></div></div>
+      <div class="hc hgreen" id="homeFollowCard" hidden><h2>Contactar hoy</h2><div id="homeFollow" style="display:flex;flex-direction:column;gap:8px"></div></div>
       <div class="card"><details class="acc"><summary>Copia de seguridad e instalación</summary><div>
         <p class="hint" style="margin-bottom:12px">Las cotizaciones y los clientes se guardan en este teléfono. Si cambia de equipo o borra los datos del navegador se pierden, por eso conviene exportar una copia de vez en cuando.</p>
         <div class="row"><button class="btn sm" data-act="excel" type="button">Exportar a Excel</button><button class="btn sm" data-act="export" type="button">Exportar copia</button><button class="btn sm" data-act="import" type="button">Importar copia</button></div>
@@ -244,6 +296,13 @@ nav.tabs button[aria-selected=true]{color:var(--accent)}
         <p class="hint" style="margin:16px 0 12px"><b>Instalar en el celular.</b> Android (Chrome): menú ⋮ → «Instalar app». iPhone (Safari): Compartir → «Agregar a inicio».</p>
         <div class="row"><button class="btn pri sm" data-act="install" type="button" id="btnInstall" hidden>Instalar app</button></div>
       </div></details></div>
+      <nav class="hnav" aria-label="Secciones"><div class="hnavin">
+        <button type="button" data-go="home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg><span>Inicio</span></button>
+        <button type="button" data-go="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg><span>Cotizaciones</span></button>
+        <button type="button" data-go="clients"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><path d="M16 5.2a3 3 0 010 5.6M18.5 15.3c1.6.7 2.6 2.1 2.9 4.7"/></svg><span>Clientes</span></button>
+        <button type="button" data-go="catalog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>Catálogo</span></button>
+        <button type="button" data-go="track"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><span>Seguimiento</span></button>
+      </div></nav>
     </section>
 
     <!-- COTIZACIÓN -->
@@ -695,7 +754,7 @@ async function downloadPDF(share){
 /* ---------- almacenamiento (en este dispositivo) ---------- */
 const lsGet=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
-function pill(){const on=navigator.onLine!==false;for(const id of ['#storePill','#homePill']){const p=$(id);p.textContent=on?'En línea':'Sin conexión';p.className='pill '+(on?'ok':'warn')}}
+function pill(){const on=navigator.onLine!==false;for(const id of ['#storePill','#homePill']){const p=$(id);p.textContent=on?'En línea':'Sin conexión';p.className=(id==='#homePill'?'hpill ':'pill ')+(on?'ok':'warn')}}
 window.addEventListener('online',pill);window.addEventListener('offline',pill);
 function nextNumber(){const y=new Date().getFullYear(),n=(lsGet('nt_counter',0)||0)+1;lsSet('nt_counter',n);return `NT-${cfg.pref?cfg.pref+'-':''}${y}-${pad(n,3)}`}
 function guardar(){
@@ -883,7 +942,7 @@ function setView(v,push=true){
   view=v;
   VIEWS.forEach(k=>{$('#view-'+k).hidden=k!==v});
   $('#topbar').hidden=v==='home'||v==='login';$('#quoteBar').hidden=v!=='quote';
-  document.body.classList.toggle('inquote',v==='quote');
+  document.body.classList.toggle('inquote',v==='quote');document.body.classList.toggle('inhome',v==='home');document.documentElement.classList.toggle('inhome',v==='home');
   if(v==='home')pickMode=false;
   $('#ttl').textContent=(v==='clients'&&pickMode)?'Elegir cliente':(TITLES[v]||'');
   $('#pickNote').hidden=!(v==='clients'&&pickMode);
@@ -904,12 +963,23 @@ function setView(v,push=true){
 window.addEventListener('popstate',()=>{const v=(location.hash||'#home').slice(1);if(v==='login')return setView(cloudUser?'home':'login',false);if(v==='client'&&!C)return setView('clients',false);if((v==='product'&&!PR)||(v==='send'&&!catSel.size))return setView('catalog',false);if(v==='op'&&!OP)return setView('track',false);setView(VIEWS.includes(v)?v:'home',false)});
 
 function renderHome(){
-  {const act=ops.filter(o=>!['entregada','cancelada'].includes(o.etapa));$('#tTrk').textContent=act.length;$('#tTrkAl').textContent=act.reduce((s,o)=>s+opAlerts(o).length,0)}
-  $('#tCat').textContent=catalog.length;$('#tSaved').textContent=qCache.length;$('#tClients').textContent=clients.length;
+  const act=ops.filter(o=>!['entregada','cancelada'].includes(o.etapa));
+  $('#tTrk').textContent=act.length;{const na=act.reduce((s,o)=>s+opAlerts(o).length,0);$('#tTrkAl').textContent=na;$('#tTrkAlW').textContent=na===1?'alerta':'alertas'}
+  $('#tCat').textContent=catalog.length;$('#tSaved').textContent=qCache.length;$('#tSavedW').textContent=qCache.length===1?'guardada':'guardadas';$('#tClients').textContent=clients.length;
   $('#tQuote').textContent=S.dirty?'Continuar: '+(S.meta.numero||'borrador')+(S.meta.cliente?' · '+S.meta.cliente:''):'Cotizar una operación de importación';
+  {const n=(...e)=>ops.filter(o=>e.includes(o.etapa)).length,v=[n('confirmada','pedido'),n('transito'),n('aduana','demorado'),n('disponible')];
+   ['hcPed','hcTra','hcAdu','hcDis'].forEach((id,i)=>{$('#'+id).textContent=v[i]});
+   ['hbPed','hbTra','hbAdu','hbDis'].forEach((id,i)=>{$('#'+id).className=v[i]?'on':''});
+   $('#hcNone').hidden=act.length>0;
+   const best=act.slice().sort((a,b)=>opAlerts(b).length-opAlerts(a).length||(b.upd||0)-(a.upd||0))[0];
+   $('#hOp').hidden=!best;
+   if(best){const q=qCache.find(x=>x.id===best.quoteId),prod=q?(q.prods||[]).map(p=>(p.desc||'').trim()).filter(Boolean)[0]:'';
+     $('#hOp').dataset.id=best.id;$('#hOpT').textContent=(best.numero||'')+' · '+(prod||best.clienteNombre||'Operación');
+     $('#hOpS').textContent=[best.modalidad,best.naviera,ETL[best.etapa]].filter(Boolean).join(' · ');
+     const na=opAlerts(best).length;$('#hOpA').hidden=!na;$('#hOpAn').textContent=na+(na===1?' alerta':' alertas')}}
   const hoy=today(),f=clients.filter(c=>c.proximo&&c.proximo<=hoy&&(c.estado==='nuevo'||c.estado==='cotizado')).sort((a,b)=>a.proximo<b.proximo?-1:1).slice(0,5);
   $('#homeFollowCard').hidden=!f.length;
-  $('#homeFollow').innerHTML=f.map(c=>`<button class="cl" type="button" data-go="openClient" data-id="${c.id}"><b>${esc(c.nombre)}</b><span class="st st-${c.estado}">${c.estado}</span><span class="meta"><span class="od">Contactar: ${fmtDate(c.proximo)}</span></span></button>`).join('');
+  $('#homeFollow').innerHTML=f.map(c=>`<button class="hfl" type="button" data-go="openClient" data-id="${c.id}"><i></i><span><b>${esc(c.nombre)}</b><small>${c.proximo===hoy?'Contactar hoy':'Contactar: '+fmtDate(c.proximo)} · ${esc(c.estado)}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>`).join('');
 }
 function newQuote(cid){
   if(!cid)return startQuoteFlow();
@@ -973,6 +1043,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-go]');if(!b)return;
   const g=b.dataset.go;
   if(g==='back'){if(view==='client'){if(String(C.nombre||'').trim())commitClient();setView('clients')}else if(view==='product'||view==='send')setView('catalog');else if(view==='op')setView('track');else setView('home')}
+  else if(g==='home')setView('home');
   else if(g==='startQuote'){if(S.dirty){show('datos');setView('quote')}else startQuoteFlow()}
   else if(g==='saved'||g==='clients')setView(g);
   else if(g==='soon')toast('El catálogo llega en la próxima versión');
