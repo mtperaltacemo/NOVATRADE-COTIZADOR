@@ -219,6 +219,11 @@ body.inhome{padding-block:0 calc(88px + env(safe-area-inset-bottom,0px))}
 .back{white-space:nowrap}
 
 /* catálogo */
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;gap:6px;text-align:left;font:inherit;color:inherit}
+.fc img{width:100%;aspect-ratio:794/1123;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#fff}
+.fc b{font-size:13px;font-weight:800;line-height:1.25;color:var(--navy)}.fc small{font-size:11px;color:var(--muted);font-weight:700}
+.flbig{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
 .pc{display:grid;grid-template-columns:44px 76px 1fr;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 12px 8px 4px;box-shadow:var(--shadow)}
 .pc.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .pc label.pk{display:flex;align-items:center;justify-content:center;height:56px;cursor:pointer}
@@ -277,6 +282,7 @@ body.inhome{padding-block:0 calc(88px + env(safe-area-inset-bottom,0px))}
         <button class="hc htile" data-go="clients" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><path d="M16 5.2a3 3 0 010 5.6M18.5 15.3c1.6.7 2.6 2.1 2.9 4.7"/></svg><b>Clientes</b><small><span class="count" id="tClients">0</span> en el CRM</small></button>
         <button class="hc htile" data-go="catalog" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><b>Catálogo</b><small><span class="count" id="tCat">0</span> productos para WhatsApp</small></button>
         <button class="hc htile" data-go="track" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><b>Seguimiento</b><small><span class="count" id="tTrk">0</span> activas · <span class="count" id="tTrkAl">0</span> <span id="tTrkAlW">alertas</span></small></button>
+        <button class="hc htile" data-go="flyers" type="button" style="grid-column:1/-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg><b>Volantes</b><small><span class="count">17</span> volantes listos para enviar por WhatsApp</small></button>
       </div>
       <div class="hc hgreen" id="homeFollowCard" hidden><h2>Contactar hoy</h2><div id="homeFollow" style="display:flex;flex-direction:column;gap:8px"></div></div>
       <div class="card"><details class="acc"><summary>Copia de seguridad e instalación</summary><div>
@@ -462,6 +468,22 @@ body.inhome{padding-block:0 calc(88px + env(safe-area-inset-bottom,0px))}
           <label class="f full"><span>Especificaciones (una por línea)</span><textarea class="ta" data-pf="desc" style="min-height:170px"></textarea></label>
         </div></div>
       <div class="sticky"><div class="row"><button class="btn pri" data-go="saveProduct" type="button" style="flex:1">Guardar producto</button><span id="delProductRow"></span></div></div>
+    </section>
+
+    <!-- VOLANTES -->
+    <section id="view-flyers" hidden style="flex-direction:column;gap:14px">
+      <div class="chips" id="flChips"></div>
+      <div class="fgrid" id="flList"></div>
+    </section>
+    <section id="view-flyer" hidden style="flex-direction:column;gap:14px">
+      <div class="card"><img class="flbig" id="flImg" alt="Volante"><p class="hint" id="flName" style="margin-top:8px;font-weight:800"></p></div>
+      <div class="card"><h2>Enviar a</h2><div class="grid">
+        <label class="f full"><span>Cliente</span><select class="plain" id="flCli"></select></label>
+        <label class="f full" id="flTelRow" hidden><span>Número de WhatsApp</span><input class="plain" id="flTel" inputmode="tel" placeholder="7XXXXXXX" autocomplete="off"></label>
+        <label class="f full"><span>Mensaje</span><textarea class="ta" id="flMsg" style="min-height:130px"></textarea></label></div></div>
+      <div class="card"><div class="row"><button class="btn pri" data-go="flSend" type="button" style="flex:1">Enviar volante por WhatsApp</button></div>
+        <div class="row" style="margin-top:10px"><button class="btn" data-go="flWa" type="button" style="flex:1">Abrir chat solo con el mensaje</button><button class="btn" data-go="flDl" type="button">Descargar</button></div>
+        <p class="hint" style="margin-top:10px">Al tocar «Enviar volante» se abre el menú de compartir del teléfono: elija WhatsApp y el chat del cliente. WhatsApp no permite adjuntar la imagen desde un enlace.</p></div>
     </section>
 
     <!-- ENVIAR POR WHATSAPP -->
@@ -922,8 +944,8 @@ document.addEventListener('click',async e=>{
 });
 
 /* ---------- pantalla principal, clientes (CRM) y navegación ---------- */
-const VIEWS=['home','quote','saved','clients','client','catalog','product','send','login','track','op'];
-const TITLES={quote:'Hacer cotización',saved:'Cotizaciones guardadas',clients:'Clientes',client:'Ficha de cliente',catalog:'Catálogo',product:'Producto',send:'Enviar por WhatsApp',track:'Seguimiento',op:'Operación'};
+const VIEWS=['home','quote','saved','clients','client','catalog','product','send','login','track','op','flyers','flyer'];
+const TITLES={quote:'Hacer cotización',saved:'Cotizaciones guardadas',clients:'Clientes',client:'Ficha de cliente',catalog:'Catálogo',product:'Producto',send:'Enviar por WhatsApp',flyers:'Volantes',flyer:'Volante',track:'Seguimiento',op:'Operación'};
 const ESTADOS=[['nuevo','Nuevo'],['cotizado','Cotizado'],['ganado','Ganado'],['perdido','Perdido']];
 let clients=[],C=null,cNew=false,cPick=false,pickMode=false,cFilter='todos',cQuery='',qQuery='',confirmDelClient=false,newArm=false,cTimer;
 const loadClients=()=>{clients=lsGet('nt_clients',[])};
@@ -945,7 +967,7 @@ function setView(v,push=true){
   if(v==='home')pickMode=false;
   $('#ttl').textContent=(v==='clients'&&pickMode)?'Elegir cliente':(TITLES[v]||'');
   $('#pickNote').hidden=!(v==='clients'&&pickMode);
-  $('#btnBack').textContent=v==='client'?'‹ Clientes':(v==='product'||v==='send')?'‹ Catálogo':v==='op'?'‹ Seguimiento':'‹ Inicio';
+  $('#btnBack').textContent=v==='client'?'‹ Clientes':(v==='product'||v==='send')?'‹ Catálogo':v==='flyer'?'‹ Volantes':v==='op'?'‹ Seguimiento':'‹ Inicio';
   if(v==='home')renderHome();
   if(v==='saved'){$('#subtitle').textContent=qCache.length+' guardadas';renderList()}
   if(v==='clients'){$('#subtitle').textContent=clients.length+' clientes';renderClients()}
@@ -953,13 +975,15 @@ function setView(v,push=true){
   if(v==='catalog')renderCatalog();
   if(v==='product')renderProduct();
   if(v==='send')renderSend();
+  if(v==='flyers')renderFlyers();
+  if(v==='flyer')renderFlyer();
   if(v==='track')renderTrack();
   if(v==='op')$('#subtitle').textContent=OP?OP.numero:'';
   if(v==='quote')update();
   window.scrollTo(0,0);
   if(push&&location.hash!=='#'+v){try{history.pushState({v},'','#'+v)}catch(e){}}
 }
-window.addEventListener('popstate',()=>{const v=(location.hash||'#home').slice(1);if(v==='login')return setView(cloudUser?'home':'login',false);if(v==='client'&&!C)return setView('clients',false);if((v==='product'&&!PR)||(v==='send'&&!catSel.size))return setView('catalog',false);if(v==='op'&&!OP)return setView('track',false);setView(VIEWS.includes(v)?v:'home',false)});
+window.addEventListener('popstate',()=>{const v=(location.hash||'#home').slice(1);if(v==='login')return setView(cloudUser?'home':'login',false);if(v==='client'&&!C)return setView('clients',false);if((v==='product'&&!PR)||(v==='send'&&!catSel.size))return setView('catalog',false);if(v==='flyer'&&!FL)return setView('flyers',false);if(v==='op'&&!OP)return setView('track',false);setView(VIEWS.includes(v)?v:'home',false)});
 
 function renderHome(){
   const act=ops.filter(o=>!['entregada','cancelada'].includes(o.etapa));
@@ -1041,7 +1065,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-go]');if(!b)return;
   const g=b.dataset.go;
-  if(g==='back'){if(view==='client'){if(String(C.nombre||'').trim())commitClient();setView('clients')}else if(view==='product'||view==='send')setView('catalog');else if(view==='op')setView('track');else setView('home')}
+  if(g==='back'){if(view==='client'){if(String(C.nombre||'').trim())commitClient();setView('clients')}else if(view==='product'||view==='send')setView('catalog');else if(view==='flyer')setView('flyers');else if(view==='op')setView('track');else setView('home')}
   else if(g==='home')setView('home');
   else if(g==='startQuote'){if(S.dirty){show('datos');setView('quote')}else startQuoteFlow()}
   else if(g==='saved'||g==='clients')setView(g);
@@ -1188,6 +1212,47 @@ document.addEventListener('input',e=>{
   else if(t.id==='sMsg')msgEdited=true;
 });
 
+
+/* ---------- volantes ---------- */
+const FLYERS=[{"f": "01-corte-laser-cnc.jpg", "n": "Corte láser CNC para su taller", "c": "Corte láser CNC"}, {"f": "02-plasma-cnc.jpg", "n": "Plasma CNC para cortar metal", "c": "Corte por plasma"}, {"f": "03-compresores-tornillo.jpg", "n": "Compresores de tornillo industriales", "c": "Compresores"}, {"f": "04-enderezadora-rines.jpg", "n": "Enderezadora de rines MT5750", "c": "Equipos de taller"}, {"f": "05-vehiculos-electricos.jpg", "n": "Vehículos eléctricos importados", "c": "Vehículos eléctricos"}, {"f": "06-laser-1500x3000-m1.jpg", "n": "Láser CNC 1500 x 3000 · Modelo 1", "c": "Corte láser CNC"}, {"f": "07-laser-1500x3000-m2.jpg", "n": "Láser CNC 1500 x 3000 · Modelo 2", "c": "Corte láser CNC"}, {"f": "08-laser-1500x3000-m3.jpg", "n": "Láser CNC 1500 x 3000 · Modelo 3", "c": "Corte láser CNC"}, {"f": "09-laser-2000x6000-m2.jpg", "n": "Láser CNC 2000 x 6000 · Modelo 2", "c": "Corte láser CNC"}, {"f": "10-laser-2000x6000-m3.jpg", "n": "Láser CNC 2000 x 6000 · Modelo 3", "c": "Corte láser CNC"}, {"f": "11-mesa-corte-1500x3000.jpg", "n": "Mesa de corte 1500 x 3000 mm", "c": "Corte láser CNC"}, {"f": "12-plasma-lgk100.jpg", "n": "Plasma inverter LGK-100", "c": "Corte por plasma"}, {"f": "13-airhorse-ahb10a.jpg", "n": "Compresor AirHorse AHB-10A · 10 HP", "c": "Compresores"}, {"f": "14-airhorse-ahb15a.jpg", "n": "Compresor AirHorse AHB-15A · 15 HP", "c": "Compresores"}, {"f": "15-airhorse-ahb20a.jpg", "n": "Compresor AirHorse AHB-20A · 20 HP", "c": "Compresores"}, {"f": "16-bentley-pony-2026.jpg", "n": "Bentley Pony 2026", "c": "Vehículos eléctricos"}, {"f": "17-byd-dolphin-mini.jpg", "n": "BYD Dolphin Mini Insignia", "c": "Vehículos eléctricos"}];
+let FL=null,flFilter='todos',flMsgEdited=false;
+function renderFlyers(){
+  const cats=[...new Set(FLYERS.map(f=>f.c))];
+  $('#flChips').innerHTML=[['todos','Todos']].concat(cats.map(c=>[c,c])).map(([k,l])=>`<button class="chip" type="button" data-go="flchip" data-k="${esc(k)}" aria-pressed="${flFilter===k}">${esc(l)}</button>`).join('');
+  $('#flList').innerHTML=FLYERS.map((f,i)=>({f,i})).filter(o=>flFilter==='todos'||o.f.c===flFilter).map(({f,i})=>`<button class="fc" type="button" data-go="openFlyer" data-i="${i}"><img loading="lazy" src="volantes/mini/${f.f}" alt=""><b>${esc(f.n)}</b><small>${esc(f.c)}</small></button>`).join('');
+  $('#subtitle').textContent=FLYERS.length+' volantes';
+}
+function flBuildMsg(){
+  const c=clients.find(x=>x.id===$('#flCli').value),nom=c?(c.contacto||c.nombre):'';
+  return 'Hola'+(nom?' '+nom:'')+', le comparto la información de *'+FL.n+'*.\n\nQuedo atento a sus consultas.\nNovatrade Import & Export'+(cfg.tel?'\n'+cfg.tel:'')
+}
+function renderFlyer(){
+  if(!FL)return;
+  $('#flImg').src='volantes/'+FL.f;$('#flName').textContent=FL.n;
+  const cur=$('#flCli').value;
+  $('#flCli').innerHTML='<option value="">— Sin elegir (elegir chat en WhatsApp) —</option>'+clients.filter(c=>normPhone(c.telefono)).map(c=>`<option value="${c.id}">${esc((c.codigo?c.codigo+' · ':'')+c.nombre)}</option>`).join('')+'<option value="otro">Otro número…</option>';
+  if(cur&&[...$('#flCli').options].some(o=>o.value===cur))$('#flCli').value=cur;
+  $('#flTelRow').hidden=$('#flCli').value!=='otro';
+  if(!flMsgEdited)$('#flMsg').value=flBuildMsg();
+  $('#subtitle').textContent='';
+}
+const flPhone=()=>{const v=$('#flCli').value;return v==='otro'?$('#flTel').value:((clients.find(x=>x.id===v)||{}).telefono||'')};
+const flBlob=async()=>(await fetch('volantes/'+FL.f)).blob();
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-go]');if(!b)return;const g=b.dataset.go;
+  if(g==='flyers'){setView('flyers')}
+  else if(g==='flchip'){flFilter=b.dataset.k;renderFlyers()}
+  else if(g==='openFlyer'){FL=FLYERS[+b.dataset.i];flMsgEdited=false;setView('flyer')}
+  else if(g==='flSend'){
+    try{const bl=await flBlob(),file=new File([bl],FL.f,{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],text:$('#flMsg').value});
+      else{saveBlob(bl,FL.f);toast('Imagen descargada: adjúntela en WhatsApp');const p=flPhone();setTimeout(()=>window.open(normPhone(p)?waLink(p,$('#flMsg').value):'https://wa.me/?text='+encodeURIComponent($('#flMsg').value),'_blank','noopener'),700)}}
+    catch(err){if(!(err&&err.name==='AbortError'))toast('No se pudo compartir el volante')}}
+  else if(g==='flWa'){const p=flPhone(),m=$('#flMsg').value;if($('#flCli').value==='otro'&&!normPhone(p)){toast('Escriba el número de WhatsApp');return}window.open(normPhone(p)?waLink(p,m):'https://wa.me/?text='+encodeURIComponent(m),'_blank','noopener')}
+  else if(g==='flDl'){try{saveBlob(await flBlob(),FL.f)}catch(err){toast('No se pudo descargar')}}
+});
+document.addEventListener('change',e=>{if(e.target.id==='flCli'){$('#flTelRow').hidden=e.target.value!=='otro';if(!flMsgEdited)$('#flMsg').value=flBuildMsg()}});
+document.addEventListener('input',e=>{if(e.target.id==='flMsg')flMsgEdited=true});
 
 /* ---------- nube compartida (Firebase) ---------- */
 const FB_CFG={apiKey:"AIzaSyA2J3Z4gHQyYYvU8AzSVs9r_L_DG6Ax9AE",authDomain:"crm-novatrade.firebaseapp.com",projectId:"crm-novatrade",storageBucket:"crm-novatrade.firebasestorage.app",messagingSenderId:"944968945401",appId:"1:944968945401:web:c7af94f3b5e478442c9c28"};
