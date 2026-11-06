@@ -554,7 +554,7 @@ function calcular(p,items){
   const rows=act.map((i,k)=>{
     const E=i.qty*i.exw, F=rd(E*fobEx,2), G=rd(F*cifFac,2), J=rd(G*i.ga,0), L=rd((G+J)*i.iva,0);
     const O=rd(F*otrosFac,0), P=rd(F*T,2), R=i.qty*i.cbmu, Q=rd(fleteUnitCBM*R*T,0);
-    const Tn=P+Q+J+O, V=Tn*p.comNov, X=rd(Tn+V+L,2), Z=rd((X-L)/p.factorFact,2), q=i.qty||0;
+    const Tn=P+Q+J+O, V=Tn*p.comNov, X=rd(Tn+V+L,2), ff=(i.ff>0?i.ff:p.factorFact), Z=rd((X-L)/ff,2), q=i.qty||0;
     return {n:k+1,desc:i.desc,qty:q,E,F,G,J,L,O,P,Q,R,T:Tn,U:q?Tn/q:0,V,W:q?X/q:0,X,Y:q?Z/q:0,Z,AA:T?Z/T:0}
   });
   const sum=k=>rows.reduce((s,r)=>s+r[k],0);
@@ -596,7 +596,7 @@ const COND_DEF='Precios en la moneda indicada, con factura.\nForma de pago y pla
 const CFG_DEF={tel:'+591 62239900 / +591 79899916',mail:'novatrade.importaciones@gmail.com',dir:'Km 10, Cond. Asai 1, Nro. 21, La Guardia, Santa Cruz, Bolivia'};
 let cfg={...CFG_DEF,defaults:null};
 const newMeta=()=>({numero:'',cliente:'',atencion:'',fecha:today(),validez:7,moneda:'BS',cond:COND_DEF});
-const blankProd=()=>({desc:'',qty:1,exw:0,partida:'',ga:0,iva:0.1494,cbmu:0});
+const blankProd=()=>({desc:'',qty:1,exw:0,partida:'',ga:0,iva:0.1494,cbmu:0,ff:0});
 const EJEMPLO={desc:'Maquina de soldar laser 1500w',qty:3,exw:3050,partida:'8515809000',ga:0,iva:0.1494,cbmu:1.2};
 let S={id:null,meta:newMeta(),params:{...DEF},prods:[]};
 let view='home';
@@ -635,10 +635,11 @@ function syncMeta(){
 }
 
 /* ---------- productos ---------- */
+const prodSub=p=>`${nf(p.qty,p.qty%1?2:0)} × USD ${nf(p.exw)}${p.ff>0?' · factor '+showNum(p.ff):''}`;
 function prodCard(p,i){
   const act=String(p.desc||'').trim()!=='';
   return `<details class="prod ${act?'':'skip'}" data-i="${i}" ${openProd===i?'open':''}>
-   <summary><span class="n">${i+1}</span><span class="d"><b>${esc(p.desc||'Sin descripción')}</b><small>${nf(p.qty,p.qty%1?2:0)} × USD ${nf(p.exw)}</small></span><span class="amt">USD ${nf(p.qty*p.exw)}</span></summary>
+   <summary><span class="n">${i+1}</span><span class="d"><b>${esc(p.desc||'Sin descripción')}</b><small>${prodSub(p)}</small></span><span class="amt">USD ${nf(p.qty*p.exw)}</span></summary>
    <div class="body"><div class="grid">
     <label class="f full"><span>Descripción</span><input class="plain" data-i="${i}" data-f="desc" value="${esc(p.desc)}" placeholder="Producto" autocomplete="off"></label>
     ${fieldHTML(`f${i}-qty`,'Cantidad','u.',`data-i="${i}" data-f="qty"`,showNum(p.qty))}
@@ -647,6 +648,8 @@ function prodCard(p,i){
     <label class="f"><span>Partida arancelaria</span><div class="inp"><input data-i="${i}" data-f="partida" inputmode="numeric" autocomplete="off" value="${esc(p.partida)}"></div></label>
     ${fieldHTML(`f${i}-ga`,'% GA','%',`data-i="${i}" data-f="ga" data-pct="1"`,showPct(p.ga))}
     ${fieldHTML(`f${i}-iva`,'% IVA importación','%',`data-i="${i}" data-f="iva" data-pct="1"`,showPct(p.iva))}
+    <label class="f"><span>Factor de facturación</span><div class="inp"><input id="f${i}-ff" data-i="${i}" data-f="ff" inputmode="decimal" autocomplete="off" placeholder="${showNum(S.params.factorFact)}" value="${p.ff>0?esc(showNum(p.ff)):''}"><i>x</i></div></label>
+    <p class="hint full">Factor de facturación: déjelo vacío para usar el factor general (${showNum(S.params.factorFact)}). Escriba otro valor solo si este producto tiene un factor distinto.</p>
     <p class="hint full" id="pinfo-${i}"></p>
    </div>
    <div class="row" style="margin-top:12px"><button class="btn sm" type="button" data-act="dupProd" data-i="${i}">Duplicar</button><button class="btn sm danger" type="button" data-act="delProd" data-i="${i}">Quitar</button></div></div></details>`
@@ -660,6 +663,7 @@ function renderProds(){
 /* ---------- cálculo y render ---------- */
 function update(){
   calc=calcular(S.params,S.prods);
+  $$('input[data-f="ff"]').forEach(el=>{el.placeholder=showNum(S.params.factorFact)});
   const c=calc,p=S.params;
   $('#barTotal').textContent=bs(c.totalFact);
   if(view==='quote'){$('#subtitle').textContent=(S.meta.numero||'Borrador')+(S.meta.cliente?' · '+S.meta.cliente:'');
@@ -902,7 +906,7 @@ document.addEventListener('input',e=>{
   else if(t.dataset.f!==undefined){const i=+t.dataset.i,f=t.dataset.f,pr=S.prods[i];if(!pr)return;
     if(f==='desc'||f==='partida')pr[f]=t.value;else{let v=parseNum(t.value);if(t.dataset.pct)v/=100;pr[f]=v}
     isExample=false;const d=t.closest('details.prod');if(d){d.classList.toggle('skip',String(pr.desc||'').trim()==='');
-      d.querySelector('summary .d b').textContent=pr.desc||'Sin descripción';d.querySelector('summary .d small').textContent=`${nf(pr.qty,pr.qty%1?2:0)} × USD ${nf(pr.exw)}`;d.querySelector('.amt').textContent='USD '+nf(pr.qty*pr.exw)}
+      d.querySelector('summary .d b').textContent=pr.desc||'Sin descripción';d.querySelector('summary .d small').textContent=prodSub(pr);d.querySelector('.amt').textContent='USD '+nf(pr.qty*pr.exw)}
     update()}
   else if(t.dataset.m){const k=t.dataset.m;S.meta[k]=k==='validez'?(parseInt(t.value)||0):t.value;update()}
   else if(t.dataset.c){cfg[t.dataset.c]=t.value}
@@ -1219,7 +1223,7 @@ let FL=null,flFilter='todos',flMsgEdited=false;
 function renderFlyers(){
   const cats=[...new Set(FLYERS.map(f=>f.c))];
   $('#flChips').innerHTML=[['todos','Todos']].concat(cats.map(c=>[c,c])).map(([k,l])=>`<button class="chip" type="button" data-go="flchip" data-k="${esc(k)}" aria-pressed="${flFilter===k}">${esc(l)}</button>`).join('');
-  $('#flList').innerHTML=FLYERS.map((f,i)=>({f,i})).filter(o=>flFilter==='todos'||o.f.c===flFilter).map(({f,i})=>`<button class="fc" type="button" data-go="openFlyer" data-i="${i}"><img loading="lazy" src="volantes/mini/${f.f}" alt=""><b>${esc(f.n)}</b><small>${esc(f.c)}</small></button>`).join('');
+  $('#flList').innerHTML=FLYERS.map((f,i)=>({f,i})).filter(o=>flFilter==='todos'||o.f.c===flFilter).map(({f,i})=>`<button class="fc" type="button" data-go="openFlyer" data-i="${i}"><img loading="lazy" src="${f.f}" alt=""><b>${esc(f.n)}</b><small>${esc(f.c)}</small></button>`).join('');
   $('#subtitle').textContent=FLYERS.length+' volantes';
 }
 function flBuildMsg(){
@@ -1228,7 +1232,7 @@ function flBuildMsg(){
 }
 function renderFlyer(){
   if(!FL)return;
-  $('#flImg').src='volantes/'+FL.f;$('#flName').textContent=FL.n;
+  $('#flImg').src=FL.f;$('#flName').textContent=FL.n;
   const cur=$('#flCli').value;
   $('#flCli').innerHTML='<option value="">— Sin elegir (elegir chat en WhatsApp) —</option>'+clients.filter(c=>normPhone(c.telefono)).map(c=>`<option value="${c.id}">${esc((c.codigo?c.codigo+' · ':'')+c.nombre)}</option>`).join('')+'<option value="otro">Otro número…</option>';
   if(cur&&[...$('#flCli').options].some(o=>o.value===cur))$('#flCli').value=cur;
@@ -1237,7 +1241,7 @@ function renderFlyer(){
   $('#subtitle').textContent='';
 }
 const flPhone=()=>{const v=$('#flCli').value;return v==='otro'?$('#flTel').value:((clients.find(x=>x.id===v)||{}).telefono||'')};
-const flBlob=async()=>(await fetch('volantes/'+FL.f)).blob();
+const flBlob=async()=>(await fetch(FL.f)).blob();
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-go]');if(!b)return;const g=b.dataset.go;
   if(g==='flyers'){setView('flyers')}
