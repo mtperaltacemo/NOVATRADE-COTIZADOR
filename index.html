@@ -324,6 +324,7 @@ body.inhome{padding-block:0 calc(88px + env(safe-area-inset-bottom,0px))}
       </div>
       <div class="card"><h2>Comisión bancaria</h2><div class="grid" id="g-bk"></div><p class="note" id="noteBanco" style="margin:12px 0 0"></p></div>
       <div class="card"><h2>Gastos en Bolivia y comisión</h2><div class="grid" id="g-bo"></div></div>
+      <div class="card"><h2>Descuento por pago anticipado</h2><div class="grid" id="g-ds"></div><p class="note" id="noteDesc" style="margin:12px 0 0"></p></div>
       <div class="card"><details class="acc"><summary>Parámetros avanzados</summary><div><div class="grid" id="g-av"></div>
         <div class="row" style="margin-top:14px"><button class="btn sm" data-act="saveDefaults" type="button">Guardar estos valores como predeterminados</button></div></div></details></div>
     </section>
@@ -525,7 +526,7 @@ const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAiwAAAHUCAYAAAAZXnMAAA
 const rd=(x,n=0)=>{const m=Math.pow(10,n),s=x<0?-1:1;return s*Math.round(Math.abs(x)*m+1e-9)/m};
 const DEF={tcReal:13,tcOficial:13.2,pesoBruto:0,gastosOrigen:0,fleteCBM:0,otrosTransp:0,pctFleteCIF:0.10,
   seguro:'NO',pctSeguro:0.01,pctSeguroCIF:0.10,bancoPct:0.04,bancoFijo:0,carpeta:0,despacho:0,transpLocal:0,comNov:0.06,
-  factorFact:0.84,seguroObl:0.02,almacenaje:0.0067,sistemaAduana:100};
+  factorFact:0.84,seguroObl:0.02,almacenaje:0.0067,sistemaAduana:100,descFijo:0,descPct:0};
 const ESCALA=[[3001,15000,0.0175],[15001,30000,0.015],[30001,50000,0.0125],[50001,100000,0.01],[100001,300000,0.005],[300001,1e12,0.004]];
 function calcular(p,items){
   const T=p.tcReal,TO=p.tcOficial;
@@ -558,8 +559,9 @@ function calcular(p,items){
     return {n:k+1,desc:i.desc,qty:q,E,F,G,J,L,O,P,Q,R,T:Tn,U:q?Tn/q:0,V,W:q?X/q:0,X,Y:q?Z/q:0,Z,AA:T?Z/T:0}
   });
   const sum=k=>rows.reduce((s,r)=>s+r[k],0);
-  return {rows,EXW,FOB,CBM,fleteTotal,fleteCIF,costoSegUSD,seguroCIF,cifUSD,cifBs,ag,almac,bancoUSD,seguroBs,otros,otrosFac,
-    iva:sum('L'),ga:sum('J'),costoNeto:sum('T'),comision:sum('V'),totalVenta:sum('X'),totalFact:sum('Z'),costoProd:sum('P'),fleteBs:sum('Q')}
+  const subtotal=sum('Z'), dF=+p.descFijo||0, dP=+p.descPct||0, descuento=Math.min(subtotal,rd(dF>0?dF:subtotal*dP,2));
+  return {rows,subtotal,descuento,EXW,FOB,CBM,fleteTotal,fleteCIF,costoSegUSD,seguroCIF,cifUSD,cifBs,ag,almac,bancoUSD,seguroBs,otros,otrosFac,
+    iva:sum('L'),ga:sum('J'),costoNeto:sum('T'),comision:sum('V'),totalVenta:sum('X'),totalFact:rd(subtotal-descuento,2),costoProd:sum('P'),fleteBs:sum('Q')}
 }
 //ENGINE_END
 
@@ -614,6 +616,7 @@ const PDEF={
  'g-se':[['pctSeguro','% de seguro sobre FOB','%',1],['pctSeguroCIF','% del seguro a considerar en CIF','%',1]],
  'g-bk':[['bancoPct','Comisión giro bancario','%',1],['bancoFijo','Comisión bancaria fija','USD']],
  'g-bo':[['carpeta','Costo carpeta','Bs'],['despacho','Gasto de despacho','Bs'],['transpLocal','Transporte local','Bs'],['comNov','Comisión Novatrade','%',1]],
+ 'g-ds':[['descFijo','Descuento','Bs'],['descPct','Porcentaje','%',1]],
  'g-av':[['factorFact','Factor de facturación','x'],['seguroObl','Seguro obligatorio sin seguro (sobre FOB)','%',1],['almacenaje','Almacenaje aduanero (sobre CIF)','%',1],['sistemaAduana','Sistema de aduana','Bs']]
 };
 function fieldHTML(id,label,unit,attr,val){return `<label class="f"><span>${label}</span><div class="inp" id="w-${id}"><input id="${id}" ${attr} inputmode="decimal" autocomplete="off" value="${esc(val)}"><i>${unit}</i></div></label>`}
@@ -677,6 +680,8 @@ function update(){
   $('#w-p-bancoPct').classList.toggle('off',fijo);
   const nb=$('#noteBanco');nb.className='note'+(fijo&&p.bancoPct>0?' warn':'');
   nb.textContent=(fijo?(p.bancoPct>0?'Se aplica solo el monto fijo; el % se ignora. ':'Monto fijo. '):'Porcentaje sobre (FOB + flete). ')+`Comisión bancaria a cobrar: ${usd(c.bancoUSD)}.`;
+  {const dF=p.descFijo>0,nd=$('#noteDesc');$('#w-p-descPct').classList.toggle('off',dF);nd.className='note'+(dF&&p.descPct>0?' warn':'');
+   nd.textContent=(dF?(p.descPct>0?'Se aplica solo el valor fijo; el porcentaje se ignora. ':'Valor fijo. '):'Porcentaje sobre el subtotal. ')+(c.descuento>0?`Descuento a aplicar: ${bs(c.descuento)}. Total facturado: ${bs(c.totalFact)}.`:'Sin descuento. Deje ambos campos en 0 si no hay descuento.')}
   S.prods.forEach((pr,i)=>{const el=$('#pinfo-'+i);if(el)el.textContent=`CBM total: ${nf(pr.qty*pr.cbmu,3)} · Subtotal EXW: USD ${nf(pr.qty*pr.exw)}`});
   renderResultado();renderDoc();
   saveDraft();
@@ -688,7 +693,7 @@ function renderResultado(){
   const H=['#','Descripción','Cant.','Costo prod. Bs','Flete Bs','Costo neto','Neto unit.','Comisión','P. unit. venta','P. total venta','P. unit. fact.','Total facturado'];
   $('#resTable').innerHTML=`<thead><tr>${H.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`+
     (c.rows.length?c.rows.map(r=>`<tr><td>${r.n}</td><td>${esc(r.desc)}</td><td>${nf(r.qty,r.qty%1?2:0)}</td><td>${nf(r.P)}</td><td>${nf(r.Q)}</td><td>${nf(r.T)}</td><td>${nf(r.U)}</td><td>${nf(r.V)}</td><td>${nf(r.W)}</td><td>${nf(r.X)}</td><td>${nf(r.Y)}</td><td>${nf(r.Z)}</td></tr>`).join(''):`<tr><td colspan="12" style="text-align:center;color:var(--muted)">Agregue al menos un producto con descripción.</td></tr>`)+
-    `</tbody><tfoot><tr><td colspan="3">Totales</td><td>${nf(c.costoProd)}</td><td>${nf(c.fleteBs)}</td><td>${nf(c.costoNeto)}</td><td></td><td>${nf(c.comision)}</td><td></td><td>${nf(c.totalVenta)}</td><td></td><td>${nf(c.totalFact)}</td></tr></tfoot>`;
+    `</tbody><tfoot><tr><td colspan="3">Totales</td><td>${nf(c.costoProd)}</td><td>${nf(c.fleteBs)}</td><td>${nf(c.costoNeto)}</td><td></td><td>${nf(c.comision)}</td><td></td><td>${nf(c.totalVenta)}</td><td></td><td>${nf(c.subtotal)}</td></tr>${c.descuento>0?`<tr><td colspan="11">Descuento por pago anticipado del 100%</td><td>−${nf(c.descuento)}</td></tr><tr><td colspan="11">Total facturado</td><td>${nf(c.totalFact)}</td></tr>`:''}</tfoot>`;
   const p=S.params,kv=(a,b)=>`<dt>${a}</dt><dd>${b}</dd>`;
   $('#kvCif').innerHTML=kv('Valor EXW',usd(c.EXW))+kv('Gastos de origen',usd(p.gastosOrigen))+kv('Valor FOB',usd(c.FOB))+'<div class="sep"></div>'+
     kv(`Flete total (${nf(c.CBM,3)} CBM)`,usd(c.fleteTotal))+kv(`Flete para CIF (${showPct(p.pctFleteCIF)}%)`,usd(c.fleteCIF))+
@@ -705,6 +710,8 @@ function clientLines(){
   return calc.rows.map(r=>({n:r.n,desc:r.desc,qty:r.qty,unit:f(r.Y),total:f(r.Z)}))
 }
 function totalCliente(){return S.meta.moneda==='USD'?calc.totalFact/(S.params.tcReal||1):calc.totalFact}
+const cv=x=>S.meta.moneda==='USD'?x/(S.params.tcReal||1):x;
+const descTxt='Descuento por pago anticipado del 100%';
 function sonText(){
   const t=totalCliente(),ent=Math.floor(t+1e-9),cen=Math.round((t-ent)*100);
   const w=letras(ent);return 'Son: '+w.charAt(0).toUpperCase()+w.slice(1)+' '+pad(cen,2)+'/100 '+(S.meta.moneda==='USD'?'Dólares americanos':'Bolivianos')
@@ -715,13 +722,14 @@ function renderDoc(){
    <div style="margin-bottom:10px"><b>Cliente:</b> ${esc(S.meta.cliente||'—')}${S.meta.atencion?`<br><b>Atención:</b> ${esc(S.meta.atencion)}`:''}</div>
    <div class="scr"><table><thead><tr><th>Ítem</th><th>Descripción</th><th>Cant.</th><th>P. unit. (${mon})</th><th>Total (${mon})</th></tr></thead><tbody>${
    L.length?L.map(r=>`<tr><td>${r.n}</td><td>${esc(r.desc)}</td><td>${nf(r.qty,r.qty%1?2:0)}</td><td>${nf(r.unit)}</td><td>${nf(r.total)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#778">Sin productos</td></tr>'}</tbody></table></div>
+   ${calc.descuento>0?`<div class="tot" style="font-weight:600"><span>Subtotal</span><span>${mon} ${nf(cv(calc.subtotal))}</span></div><div class="tot" style="font-weight:600;margin-top:4px"><span>${descTxt}</span><span>− ${mon} ${nf(cv(calc.descuento))}</span></div>`:''}
    <div class="tot"><span>TOTAL</span><span>${mon} ${nf(totalCliente())}</span></div><div class="son">${esc(sonText())}</div>
    <pre>${esc(S.meta.cond)}</pre>`;
 }
 function copyText(){
   const mon=S.meta.moneda==='USD'?'USD':'Bs',L=clientLines();
   const t=['*NOVATRADE – Cotización '+(S.meta.numero||'')+'*',S.meta.cliente?'Cliente: '+S.meta.cliente:'','Fecha: '+fmtDate(S.meta.fecha)+' · Válida hasta '+fmtDate(addDays(S.meta.fecha,+S.meta.validez||0)),'',
-    ...L.map(r=>`${r.n}. ${r.desc} – ${nf(r.qty,r.qty%1?2:0)} u. × ${mon} ${nf(r.unit)} = ${mon} ${nf(r.total)}`),'','*TOTAL: '+mon+' '+nf(totalCliente())+'*','',S.meta.cond].filter((x,i,a)=>x!==''||a[i-1]!=='');
+    ...L.map(r=>`${r.n}. ${r.desc} – ${nf(r.qty,r.qty%1?2:0)} u. × ${mon} ${nf(r.unit)} = ${mon} ${nf(r.total)}`),'',...(calc.descuento>0?['Subtotal: '+mon+' '+nf(cv(calc.subtotal)),descTxt+': − '+mon+' '+nf(cv(calc.descuento))]:[]),'*TOTAL: '+mon+' '+nf(totalCliente())+'*','',S.meta.cond].filter((x,i,a)=>x!==''||a[i-1]!=='');
   const s=t.join('\n');
   const fb=()=>{const ta=document.createElement('textarea');ta.value=s;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Texto copiado')}catch(e){toast('No se pudo copiar')}ta.remove()};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(()=>toast('Texto copiado'),fb);else fb();
@@ -751,7 +759,10 @@ function buildPDF(){
     didParseCell:d=>{if(d.section==='head'&&d.column.index>=2)d.cell.styles.halign='right';if(d.section==='head'&&d.column.index<2)d.cell.styles.halign=d.column.index===0?'center':'left'}});
   y=doc.lastAutoTable.finalY+7;
   const need=h=>{if(y+h>272){doc.addPage();y=20}};
-  need(30);
+  need(30+(calc.descuento>0?14:0));
+  if(calc.descuento>0){doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(50,62,78);
+    doc.text('Subtotal',W-M-100,y);doc.text(mon+' '+nf(cv(calc.subtotal)),W-M,y,{align:'right'});y+=6;
+    doc.text(descTxt,W-M-100,y);doc.text('- '+mon+' '+nf(cv(calc.descuento)),W-M,y,{align:'right'});y+=8}
   doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...NAVY);
   doc.text('TOTAL',W-M-62,y);doc.text(mon+' '+nf(totalCliente()),W-M,y,{align:'right'});
   y+=6;doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...GRAY);
@@ -761,7 +772,7 @@ function buildPDF(){
     doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(50,62,78);doc.text(cond,M,y)}
   const n=doc.getNumberOfPages(),contact=[cfg.tel,cfg.mail,cfg.dir].filter(Boolean).join('  ·  ');
   for(let i=1;i<=n;i++){doc.setPage(i);doc.setDrawColor(215,224,234);doc.setLineWidth(.3);doc.line(M,282,W-M,282);doc.setFontSize(8.5);doc.setTextColor(...GRAY);
-    doc.text('NOVATRADE Import & Export'+(contact?'  ·  '+contact:''),M,287);doc.text(`Página ${i} de ${n}`,W-M,287,{align:'right'})}
+    doc.text(doc.splitTextToSize('NOVATRADE Import & Export'+(contact?'  ·  '+contact:''),W-2*M-30).slice(0,2),M,286.5);doc.text(`Página ${i} de ${n}`,W-M,286.5,{align:'right'})}
   return doc.output('blob');
 }
 function saveBlob(blob,name){const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(u);a.remove()},5000)}
@@ -815,7 +826,7 @@ function exportData(qs,cl){
   const res=[],det=[];
   for(const q of qs){const r=calcular(q.params,q.prods),c=cOf(q),f=new Date(q.ts).toLocaleDateString('es-BO'),r2=x=>Math.round(x*100)/100;for(const w of r.rows)for(const k in w)if(typeof w[k]==='number')w[k]=r2(w[k]);for(const k of ['FOB','cifUSD','cifBs','otros','costoNeto','comision','iva','totalVenta','totalFact'])r[k]=r2(r[k]);
     res.push({'N.º cotización':q.numero,'Fecha':f,'Cód. cliente':c.codigo||(q.meta&&q.meta.clienteCodigo)||'','Cliente':q.cliente,'C.I./NIT':c.ci||'','Teléfono':c.telefono||'','Estado cliente':c.estado||'',
-      'FOB (USD)':r.FOB,'CIF (USD)':r.cifUSD,'CIF (Bs)':r.cifBs,'Otros gastos (Bs)':r.otros,'Costo neto (Bs)':r.costoNeto,'Comisión Novatrade (Bs)':r.comision,'IVA (Bs)':r.iva,'Total venta (Bs)':r.totalVenta,'Total facturado (Bs)':r.totalFact});
+      'FOB (USD)':r.FOB,'CIF (USD)':r.cifUSD,'CIF (Bs)':r.cifBs,'Otros gastos (Bs)':r.otros,'Costo neto (Bs)':r.costoNeto,'Comisión Novatrade (Bs)':r.comision,'IVA (Bs)':r.iva,'Total venta (Bs)':r.totalVenta,'Subtotal facturado (Bs)':r2(r.subtotal),'Descuento (Bs)':r2(r.descuento),'Total facturado (Bs)':r.totalFact});
     for(const w of r.rows)det.push({'N.º cotización':q.numero,'Cód. cliente':c.codigo||'','Cliente':q.cliente,'#':w.n,'Descripción':w.desc,'Cantidad':w.qty,'FOB (USD)':w.F,'CIF (Bs)':w.G,'Gran. aduana (Bs)':w.J,'IVA (Bs)':w.L,'Otros gastos (Bs)':w.O,'Costo producto (Bs)':w.P,'Flete (Bs)':w.Q,'Costo neto (Bs)':w.T,'Comisión (Bs)':w.V,'Total venta (Bs)':w.X,'Precio unit. facturado (Bs)':w.Y,'Total facturado (Bs)':w.Z})}
   const cli=cl.map(c=>({'Código':c.codigo||'','Nombre / empresa':c.nombre,'Teléfono':c.telefono||'','C.I./NIT':c.ci||'','Dirección':c.direccion||'','Contacto':c.contacto||'','Correo':c.correo||'','Estado':c.estado||'','Próximo contacto':c.proximo||'','Notas':c.notas||'','N.º cotizaciones':qs.filter(q=>cOf(q).id===c.id).length}));
   return {res,det,cli}
@@ -942,7 +953,7 @@ document.addEventListener('click',async e=>{
   else if(a==='import')$('#fileImport').click();
   else if(a==='install'){if(installEv){installEv.prompt();installEv=null;$('#btnInstall').hidden=true}}
   else if(a==='saveDefaults'||a==='saveCfg'){
-    if(a==='saveDefaults'){const {seguro,...rest}=S.params;cfg.defaults={...rest,seguro:'NO'}}
+    if(a==='saveDefaults'){const {seguro,descFijo,descPct,...rest}=S.params;cfg.defaults={...rest,seguro:'NO'}}
     lsSet('nt_cfg',cfg);toast('Guardado en este equipo')
   }
 });
