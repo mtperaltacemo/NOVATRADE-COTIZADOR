@@ -1,12 +1,12 @@
 /* Service worker del Cotizador Novatrade: permite abrir la app sin internet.
    Cuando publique una versión nueva, cambie el número de VERSION. */
-const VERSION='v16';
+const VERSION='v17';
 const CACHE = 'nt-cotizador-' + VERSION;
-const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'jspdf.umd.min.js', 'jspdf.plugin.autotable.min.js', 'xlsx.mini.min.js', 'firebase-bundle.js',
+const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'firebase-bundle.js',
   'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all(ARCHIVOS.map(u => c.add(u).catch(() => null)))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('nt-cotizador-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
